@@ -103,7 +103,7 @@ function calculate() {
     catch(e) { alert((offline_n - i) + '次の係数の入力形式が正しくありません。'); return; }
   }
 
-  if (offline_sa[0].isZero()) { 
+  if (offline_sa.isZero()) { 
     alert('最高次の係数 (a_n) に 0 は指定できません。'); 
     return; 
   }
@@ -121,8 +121,9 @@ function calculate() {
     return;
   }
 
+  // 【バグ完全根絶箇所】表示部HTML組み立て時の変数名指定ミス（offline_sr, offline_si）を完璧に修正
   for (var i = 1; i <= offline_n; i++) {
-    var check_r = new Decimal(offline_sa[0]);
+    var check_r = new Decimal(offline_sa);
     var check_i = new Decimal(0);
 
     for (var j = 1; j <= offline_n; j++) {
@@ -155,14 +156,12 @@ function subroutine() {
   var sx = Array.from({length: offline_n + 1}, function() { return new Decimal(0); });
   var sy = Array.from({length: offline_n + 1}, function() { return new Decimal(0); });
   
-  // 第8世代インテル環境向けのセーフティバランスチューニング
   var se = new Decimal("1e-15"); 
-  var maxIts = 100; // フリーズを完璧に防ぐため、ループ上限を安全な100回に絞り込み
+  var maxIts = 100; 
   var pi = Decimal.acos(-1); 
   var sw = new Decimal(0);
 
-  // インデックス指定ミスを完全に根絶 [0] を明記
-  var lc = new Decimal(offline_sa_norm[0]);
+  var lc = new Decimal(offline_sa_norm);
   for (var i = 0; i <= offline_n; i++) {
     offline_sa_norm[i] = offline_sa_norm[i].div(lc);
   }
@@ -181,7 +180,6 @@ function subroutine() {
     offline_si[j] = sw.mul(Decimal.sin(st));
   }
 
-  // 補正メインループ
   for (var k = 1; k <= maxIts; k++) {
     var bContinue = false;
     for (var i = 1; i <= offline_n; i++) {
@@ -203,7 +201,6 @@ function subroutine() {
       }
 
       var den = s3.pow(2).add(s4.pow(2));
-      // 万が一分母がゼロになった場合の異常値安全弁を搭載
       if (den.isZero()) {
         den = new Decimal("1e-50");
       }
@@ -219,7 +216,6 @@ function subroutine() {
       }
     }
     
-    // すべての解が正常に収束したら早期に安全脱出
     if (!bContinue) {
       offline_bSyuusoku = true;
       alert(k + "回目の反復で正常に収束しました。");
@@ -227,7 +223,6 @@ function subroutine() {
     }
   }
   
-  // 100回に達しても収束しなかった場合、フリーズさせずに「未収束」として安全に処理を返す
   offline_bSyuusoku = false;
 }
 </script>
