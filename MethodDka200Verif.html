@@ -62,7 +62,7 @@
     <h1>MethodDka (200桁高精度多項式解法・検算機能搭載)</h1>
     <div class="input-field">
       <label for="maxDegree">最高次数 (n):</label>
-      <input type="number" id="maxDegree" value="3" min="1" />
+      <input type="number" id="maxDegree" value="4" min="1" />
     </div>
     <div class="button-group">
       <button class="button secondary" onclick="createFields()">係数入力欄を生成</button>
@@ -85,6 +85,7 @@ let sr = [];      // 解の実部配列
 let si = [];      // 解の虚部配列
 let bSyuusoku = false;
 
+// 修正点：エラーの原因となる特殊文字「$」を削除し、確実にDOM生成が走るように修正
 function createFields() {
   const maxDegree = document.getElementById('maxDegree').value;
   n = parseInt(maxDegree);
@@ -99,8 +100,12 @@ function createFields() {
   for (let i = 0; i <= n; i++) {
     const inputField = document.createElement('div');
     inputField.className = 'input-field';
+    
+    // 初期の例として x^4 - 1 = 0 がセットされるように設定
     const defaultVal = (i === 0) ? "1" : (i === n ? "-1" : "0");
-    inputField.innerHTML = `<label for="coefficient${i}">$x^{${n - i}}$ の係数 ($a_{${n - i}}$):</label><input type="text" id="coefficient${i}" value="${defaultVal}" />`;
+    
+    // 表示テキストをシンプルな文字列に変更
+    inputField.innerHTML = '<label for="coefficient' + i + '">' + (n - i) + '次の係数 (a_' + (n - i) + '):</label><input type="text" id="coefficient' + i + '" value="' + defaultVal + '" />';
     coefficientsDiv.appendChild(inputField);
   }
   document.getElementById('calc-button-container').style.display = 'block';
@@ -113,17 +118,17 @@ function calculate() {
   si = Array(n + 1);
   
   for (let i = 0; i <= n; i++) {
-    const coefficient = document.getElementById(`coefficient${i}`).value.trim();
+    const coefficient = document.getElementById('coefficient' + i).value.trim();
     try {
       sa[i] = new Decimal(coefficient || "0");
     } catch(e) {
-      alert(`係数 ${n - i} 次の入力が正しい数値ではありません。`);
+      alert((n - i) + '次の係数の入力が正しい数値ではありません。');
       return;
     }
   }
 
   if (sa[0].isZero()) {
-    alert('最高次の係数（a_n）に 0 は指定できません。');
+    alert('最高次の係数に 0 は指定できません。');
     return;
   }
 
@@ -141,19 +146,17 @@ function calculate() {
   } else {
     // 収束後、各解の検算を実行
     for (let i = 1; i <= n; i++) {
-      // 元の多項式 P(z) に解 z = sr[i] + i*si[i] を代入して残差を求める (Horner法)
       let check_r = new Decimal(sa[0]);
       let check_i = new Decimal(0);
 
       for (let j = 1; j <= n; j++) {
-        // (check_r + i*check_i) * (sr[i] + i*si[i]) + sa[j]
         let next_r = check_r.mul(sr[i]).sub(check_i.mul(si[i])).add(sa[j]);
         let next_i = check_r.mul(si[i]).add(check_i.mul(sr[i]));
         check_r = next_r;
         check_i = next_i;
       }
 
-      // 残差の絶対値（誤差の大きさ）を計算: sqrt(check_r^2 + check_i^2)
+      // 残差の絶対値（誤差の大きさ）を計算
       let error_abs = check_r.pow(2).add(check_i.pow(2)).sqrt();
 
       // UIへの結果出力
@@ -181,12 +184,12 @@ function subroutine() {
   let sy = Array.from({length: n + 1}, () => new Decimal(0));
   
   let se = new Decimal("1e-195"); 
-  let m = 800; // パフォーマンスと精度のバランスをとった最大反復数
+  let m = 800;
   
   let sp = Decimal.acos(-1); 
   let sw = new Decimal(0);
 
-  // 最高次係数で全体を割る（a_0 を 1 に正規化）
+  // 最高次係数で全体を割る
   const a0 = sa_norm[0];
   for (let i = 0; i <= n; i++) {
     sa_norm[i] = sa_norm[i].div(a0);
@@ -259,7 +262,7 @@ function subroutine() {
 
     if (!bContinue) {
       bSyuusoku = true;
-      alert(`${k}回目の反復で200桁の精度に収束しました！\n直ちに自動検算を行います。`);
+      alert(k + '回目の反復で200桁の精度に収束しました！\n直ちに自動検算を行います。');
       return;
     }
   }
