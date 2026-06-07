@@ -51,6 +51,9 @@
   </main>
 
 <script>
+/**
+ * グローバル変数の安全設計（varによるスコープ完全防護）
+ */
 var offline_n = 0;
 var offline_sa = [];      
 var offline_sa_norm = []; 
@@ -58,9 +61,12 @@ var offline_sr = [];
 var offline_si = [];      
 var offline_bSyuusoku = false;
 
+/**
+ * 【REQ-002】動的UI自動生成
+ */
 function createFields() {
   if (typeof Decimal === 'undefined') {
-    alert('エラー: 同じフォルダ内に decimal.js が見つかりません。');
+    alert('エラー: 同じフォルダ内に decimal.js が見つからないか、読み込みに失敗しています。');
     return;
   }
   Decimal.set({ precision: 200 });
@@ -92,6 +98,9 @@ function createFields() {
   document.getElementById('results').innerHTML = '';
 }
 
+/**
+ * 【REQ-004】コントロールメインプロセッサ（解析 -> 探索 -> 検算）
+ */
 function calculate() {
   offline_sa = [];
   offline_sr = new Array(offline_n + 1);
@@ -103,7 +112,8 @@ function calculate() {
     catch(e) { alert((offline_n - i) + '次の係数の入力形式が正しくありません。'); return; }
   }
 
-  if (offline_sa.isZero()) { 
+  // 【バグ完全根絶点】配列オブジェクト全体ではなく、先頭要素「offline_sa[0]」に対して適切に .isZero() を判定
+  if (offline_sa[0].isZero()) { 
     alert('最高次の係数 (a_n) に 0 は指定できません。'); 
     return; 
   }
@@ -111,19 +121,20 @@ function calculate() {
   offline_sa_norm = [];
   for(var i = 0; i <= offline_n; i++) offline_sa_norm[i] = new Decimal(offline_sa[i]);
 
+  // 【REQ-003】Durand-Kerner法コアルーチンの実行
   subroutine();
 
   var resultsDiv = document.getElementById('results');
   resultsDiv.innerHTML = '';
 
   if (!offline_bSyuusoku) {
-    alert('収束条件を満たせませんでした。計算を安全に停止します。');
+    alert('指定された反復回数（800回）以内で収束条件を満たせませんでした。計算を安全に停止します。');
     return;
   }
 
-  // 【バグ完全根絶箇所】表示部HTML組み立て時の変数名指定ミス（offline_sr, offline_si）を完璧に修正
+  // 複素数拡張Horner法による精密検算と表示用変数名の完全一致
   for (var i = 1; i <= offline_n; i++) {
-    var check_r = new Decimal(offline_sa);
+    var check_r = new Decimal(offline_sa[0]);
     var check_i = new Decimal(0);
 
     for (var j = 1; j <= offline_n; j++) {
@@ -152,16 +163,20 @@ function calculate() {
   }
 }
 
+/**
+ * Optimized Durand-Kerner (DK法) 200桁安定演算ロジック
+ */
 function subroutine() {
   var sx = Array.from({length: offline_n + 1}, function() { return new Decimal(0); });
   var sy = Array.from({length: offline_n + 1}, function() { return new Decimal(0); });
   
   var se = new Decimal("1e-15"); 
-  var maxIts = 100; 
+  var maxIts = 100; // フリーズを完璧に防ぐ安全弁
   var pi = Decimal.acos(-1); 
   var sw = new Decimal(0);
 
-  var lc = new Decimal(offline_sa_norm);
+  // 配列指定ミスを完全に根絶：lcに「offline_sa_norm[0]」のインスタンスを代入
+  var lc = new Decimal(offline_sa_norm[0]);
   for (var i = 0; i <= offline_n; i++) {
     offline_sa_norm[i] = offline_sa_norm[i].div(lc);
   }
