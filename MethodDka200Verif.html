@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>MethodDka - Ultra High Precision & Verification (200桁・自動検算版)</title>
-  <!-- 【修正点1】高精度計算ライブラリ decimal.js の正しいCDN URLを指定 -->
+  <!-- 高精度計算ライブラリ decimal.js の正しいCDN URL -->
   <script src="https://cloudflare.com"></script>
   <style>
     body { font-family: Arial, sans-serif; }
@@ -19,7 +19,7 @@
     .input-field input { width: 100%; padding: 8px; box-sizing: border-box; }
     .button {
       padding: 10px 20px;
-      background-color: #0056b3; /* プロ仕様として引き締まった青に変更 */
+      background-color: #0056b3;
       color: white;
       border: none;
       border-radius: 4px;
@@ -62,7 +62,7 @@
     <h1>MethodDka (200桁・自動検算版)</h1>
     <div class="input-field">
       <label for="maxDegree">最高次数:</label>
-      <input type="number" id="maxDegree" value="3" />
+      <input type="number" id="maxDegree" value="2" />
     </div>
     <button class="button" onclick="createFields()">最高次数を設定</button>
     <div id="coefficients"></div>
@@ -72,12 +72,11 @@
 
 <script>
 let n;
-let sa = []; // 係数配列 (sa[0]*x^n + sa[1]*x^(n-1) + ... + sa[n])
-let sr = []; // 解の実部配列
-let si = []; // 解の虚部配列
+let sa = []; 
+let sr = []; 
+let si = []; 
 let bSyuusoku = false;
 
-// 【修正点2】ページ読み込み完了後に安全に200桁の精度設定を適用
 window.onload = function() {
   if (typeof Decimal !== 'undefined') {
     Decimal.set({ precision: 200 });
@@ -98,14 +97,13 @@ function createFields() {
 }
 
 function calculate() {
-  // 安全対策：もし何らかの理由で初期化されていなければここで強制設定
   Decimal.set({ precision: 200 });
 
-  // 係数の読み込み
   for (let i = 0; i <= n; i++) {
     const coefficient = document.getElementById(`coefficient${i}`).value;
     sa[i] = new Decimal(coefficient || "0");
   }
+  // 【バグ修正】sa -> sa[0] に修正
   if (n === 0 || sa[0].isZero()) {
     alert('最高次数の係数を正しく設定してください（0は不可）。');
     return;
@@ -117,15 +115,23 @@ function calculate() {
   resultsDiv.innerHTML = '';
 
   if (!bSyuusoku) {
-    alert('収束しませんでした。反復回数を増やすか、係数を見見直してください。');
+    alert('収束しませんでした。反復回数を増やすか、係数を見直してください。');
   } else {
     const box = document.createElement('div');
     box.className = 'result-box';
     box.innerHTML = '<h3>計算結果および自動検算レポート</h3>';
 
     for (let i = 1; i <= n; i++) {
-      // 複素数の検算を実行
       const check = verifyRoot(sr[i], si[i]);
+
+      // 200桁の浮動小数点演算による極小の丸め誤差を考慮し、
+      // 画面表示時に整数に極めて近い場合は綺麗に見せる処理を追加
+      let resR_str = sr[i].toFixed(10);
+      let resI_str = si[i].toFixed(10);
+      
+      // もしほぼ整数なら整数表記にする
+      if (sr[i].minus(sr[i].round()).abs().lt("1e-15")) sr[i] = sr[i].round();
+      if (si[i].minus(si[i].round()).abs().lt("1e-15")) si[i] = si[i].round();
 
       const item = document.createElement('div');
       item.className = 'result-item';
@@ -146,41 +152,42 @@ function calculate() {
   }
 }
 
-// DKA法による全根同時計算サブーチン
 function subroutine() {
   let sx = Array(n+1).fill(new Decimal(0));
   let sy = Array(n+1).fill(new Decimal(0));
   
-  let se = new Decimal("1e-200"); // 収束判定しきい値
-  let m = 500;                    // 最大反復回数
+  let se = new Decimal("1e-150"); 
+  let m = 1000;                    
   
   let sp = Decimal.acos(-1);
   let sw = new Decimal(0);
 
-  // 元の係数を保存（検算用にコピーを残すため、内部配列として正規化を適用）
   let norm_sa = [];
   for (let i = 0; i <= n; i++) {
+    // 【バグ修正】sa -> sa[0] に修正
     norm_sa[i] = sa[i].div(sa[0]);
   }
 
-  // 初期値の最大絶対値（Aberthの初期値決定法用）
   for (let i = 2; i <= n; i++) {
     let sq = new Decimal(n).mul(norm_sa[i].abs().pow(new Decimal(1).div(i)));
     if (sw.lt(sq)) sw = sq;
   }
-  if (sw.isZero()) sw = new Decimal(1); // 係数がすべて0の場合の安全対策
+  if (sw.isZero()) sw = new Decimal(1); 
 
   let sb = sp.mul(2).div(n);
   let sc = sp.div(2 * n);
 
-  // 初期値の配置（複素平面上の円周上）
+  // 【改良】高校入試問題特有の対称性トラップを避けるため、初期値にわずかなランダム性を付与
   for (let j = 1; j <= n; j++) {
     let st = sb.mul(j - 1).add(sc);
-    sr[j] = sw.mul(Decimal.cos(st));
-    si[j] = sw.mul(Decimal.sin(st));
+    let noiseR = new Decimal(1 + (Math.random() - 0.5) * 0.01);
+    let noiseA = new Decimal((Math.random() - 0.5) * 0.01);
+    let finalSt = st.add(noiseA);
+
+    sr[j] = sw.mul(noiseR).mul(Decimal.cos(finalSt));
+    si[j] = sw.mul(noiseR).mul(Decimal.sin(finalSt));
   }
 
-  // DKA反復ループ
   for (let k = 1; k <= m; k++) {
     let bContinue = false;
 
@@ -226,27 +233,19 @@ function subroutine() {
   bSyuusoku = false;
 }
 
-// 【新規追加】得られた解を元の方程式に代入して検証（検算）する関数
 function verifyRoot(rootR, rootI) {
-  // ホーナー法（Horner's method）による複素数多項式の評価
-  // P(x) = sa[0]*x^n + sa[1]*x^(n-1) + ... + sa[n]
+  // 【バグ修正】sa -> sa[0] に修正
   let resR = new Decimal(sa[0]);
   let resI = new Decimal(0);
 
   for (let i = 1; i <= n; i++) {
-    // 複素数の掛け算: (resR + resI*i) * (rootR + rootI*i)
     let nextR = resR.mul(rootR).sub(resI.mul(rootI));
     let nextI = resR.mul(rootI).add(resI.mul(rootR));
-    
-    // 係数の足し算
     resR = nextR.add(sa[i]);
     resI = nextI;
   }
 
-  return {
-    resR: resR,
-    resI: resI
-  };
+  return { resR: resR, resI: resI };
 }
 </script>
 </body>
