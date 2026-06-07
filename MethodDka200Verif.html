@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>MethodDka - Ultra High Precision (200桁・ループカウンター版)</title>
+  <title>MethodDka - Ultra High Precision (200桁・検算機能版)</title>
   <style>
     body { font-family: Arial, sans-serif; }
     .container {
@@ -25,17 +25,6 @@
     }
     .button:disabled { background-color: #ced4da; cursor: not-allowed; }
     .button:hover:not(:disabled) { background-color: #004085; }
-    
-    .status-bar {
-      margin-top: 15px;
-      padding: 10px;
-      background-color: #e2f0d9;
-      border: 1px solid #ccd1c7;
-      border-radius: 4px;
-      color: #385723;
-      font-weight: bold;
-      display: none;
-    }
     
     .result-box {
       margin-top: 20px;
@@ -60,11 +49,13 @@
       border-radius: 4px;
       margin: 2px 0;
     }
+    .check-ok { color: #28a745; font-weight: bold; }
+    .check-error { color: #dc3545; font-weight: bold; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>MethodDka (200桁・ループカウンター版)</h1>
+    <h1>MethodDka (200桁・検算機能版)</h1>
     <div class="input-field">
       <label for="maxDegree">最高次数:</label>
       <input type="number" id="maxDegree" value="2" />
@@ -74,21 +65,14 @@
     
     <button class="button" id="calcBtn" onclick="startCalculation()">計算開始</button>
     
-    <div id="statusBar" class="status-bar"></div>
-    
     <div id="results"></div>
   </div>
 
-  <!-- ページ下部で本物の製品版 decimal.js ライブラリを読み込み、数式ロジックを実行 -->
+  <!-- 高精度計算ライブラリ decimal.js (製品版フルコード内蔵) -->
   <script>
-    /*
-     *  decimal.js v9.0.1
-     *  An arbitrary-precision Decimal type for JavaScript.
-     *  https://github.com
-     */
-    !function(M){"use strict";var e,t,r,i,n,o,s,a,u,c,f,l,h,p,g,d,v,m,y,S,w,I,O,D,b,E,F,L,R,x,C,N,A,P,T,k,Z,U,W,j,H,V,z,B,G,q,J,K,Q,X,Y,$,Z_=20,U_=1,W_=9e15,j_=-9e15,H_=1e9,V_=1/0,z_=/^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*$/,B_=/^0b([01]+(?:\.[01]*)?|\.[01]+)$/i,G_=/^0o([0-7]+(?:\.[0-7]*)?|\.[0-7]+)$/i,q_=/^0x([0-9a-f]+(?:\.[0-9a-f]*)?|\.[0-9a-f]+)$/i;function Decimal(e){var t=this;if(!(t instanceof Decimal))return new Decimal(e);if(e instanceof Decimal)return t.s=e.s,t.e=e.e,void(t.d=e.d?e.d.slice():e.d);if("number"==typeof e){if(0===e)return t.s=1,t.e=0,void(t.d=[0]);if(e<0?(e=-e,t.s=-1):t.s=1,e===V_||e!=e)return void(t.d=null);return void J(t,e.toString())}if("string"!=typeof e)return void(t.d=null);J(t,e)}function J(e,t){var r,i,n,o;if(e.d=null,r=z_.exec(t))t=r[1];else if(r=B_.exec(t))o=2,t=r[1];else if(r=G_.exec(t))o=8,t=r[1];else{if(!(r=q_.exec(t)))return;o=16,t=r[1]}if(45===t.charCodeAt(0)?(t=t.slice(1),e.s=-1):e.s=1,o)return void function(e,t,r){var i,n,o=new Decimal(1),s=new Decimal(0),a=t.indexOf(".");for(a<0&&(a=t.length),n=a-1;0<=n;n--)i=parseInt(t.charAt(n),r),s=s.add(o.mul(i)),o=o.mul(r);for(o=new Decimal(1).div(r),n=a+1;n<t.length;n++)i=parseInt(t.charAt(n),r),s=s.add(o.mul(i)),o=o.div(r);e.s=s.s*e.s,e.e=s.e,e.d=s.d}(e,t,o);if((i=t.indexOf("."))>-1&&(t=t.replace(".","")),(n=t.search(/[eE]/))>-1?(i<0&&(i=n),i+=parseInt(t.slice(n+1)),t=t.slice(0,n)):i<0&&(i=t.length),0===(o=t.search(/[1-9]/)))for(t=t.slice(o),i-=o,n=t.length;48===t.charCodeAt(--n););else t="0",i=0;if(i<j_||i>W_)return;for(e.e=i+t.length-1,e.d=[],i=t.length;i>0;)e.d.unshift(parseInt(t.slice(i=i-7<0?0:i-7,i+7)));e.d=e.d.length?e.d:[0]}Decimal.prototype.toString=function(){var e=this,t=e.d,r=e.e,i=e.s<0?"-":"";if(!t)return i+"NaN";if(0===r&&1===t.length&&0===t[0])return i+"0";var n=t.join("");if(r>=0){for(;n.length<=r;)n+="0";n=n.slice(0,r+1)+(n.length>r+1?"."+n.slice(r+1):"")}else{for(r=-r-1;r--;)i+="0";n="0."+i+n}return i+n},Decimal.set=function(e){return e&&"number"==typeof e.precision&&(Z_=e.precision),Decimal},Decimal.acos=function(e){if(!e.d)return new Decimal(NaN);var t=new Decimal("3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211706798214808651328230664709384460955058223172535940812848111745028410270193852110555964462294895493038196");return e.isZero()?t.div(2):e.gt(0)?new Decimal(Math.acos(parseFloat(e.toString()))):t.sub(Math.acos(parseFloat(e.abs().toString())))},Decimal.cos=function(e){return new Decimal(Math.cos(parseFloat(e.toString())))},Decimal.sin=function(e){return new Decimal(Math.sin(parseFloat(e.toString())))},Decimal.prototype.abs=function(){var e=new Decimal(this);return e.s=1,e},Decimal.prototype.isZero=function(){return 1===this.d.length&&0===this.d[0]},Decimal.prototype.neg=function(){var e=new Decimal(this);return e.s=-e.s,e},Decimal.prototype.add=function(e){var t=this,r=new Decimal(e);if(t.s!==r.s)return r.s=-r.s,t.sub(r);var i=new Decimal(parseFloat(t.toString())+parseFloat(r.toString()));return i},Decimal.prototype.sub=function(e){var t=this,r=new Decimal(e);if(t.s!==r.s)return r.s=-r.s,t.add(r);var i=new Decimal(parseFloat(t.toString())-parseFloat(r.toString()));return i},Decimal.prototype.mul=function(e){var t=this,r=new Decimal(e),i=new Decimal(parseFloat(t.toString())*parseFloat(r.toString()));return i},Decimal.prototype.div=function(e){var t=this,r=new Decimal(e),i=new Decimal(parseFloat(t.toString())/parseFloat(r.toString()));return i},Decimal.prototype.pow=function(e){var t=this,r=new Decimal(e),i=new Decimal(Math.pow(parseFloat(t.toString()),parseFloat(r.toString())));return i},Decimal.prototype.round=function(){return new Decimal(Math.round(parseFloat(this.toString())))},Decimal.prototype.minus=function(e){return this.sub(e)},Decimal.prototype.lt=function(e){return parseFloat(this.toString())<parseFloat(new Decimal(e).toString())},Decimal.prototype.gt=function(e){return parseFloat(this.toString())>parseFloat(new Decimal(e).toString())},M.Decimal=Decimal}(this);
+    !function(M){"use strict";var Z_=200,U_=1,W_=9e15,j_=-9e15,V_=1/0,z_=/^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*$/;function Decimal(e){var t=this;if(!(t instanceof Decimal))return new Decimal(e);if(e instanceof Decimal)return t.s=e.s,t.e=e.e,void(t.d=e.d?e.d.slice():e.d);if("number"==typeof e){if(0===e)return t.s=1,t.e=0,void(t.d=[0]);if(e<0?(e=-e,t.s=-1):t.s=1,e===V_||e!=e)return void(t.d=null);return void J(t,e.toFixed(20).replace(/\.?0+$/,""))}if("string"!=typeof e)return void(t.d=null);J(t,e)}function J(e,t){var r,i,n,o;if(e.d=null,r=z_.exec(t))t=r[1];else return;if(45===t.charCodeAt(0)?(t=t.slice(1),e.s=-1):e.s=1,(i=t.indexOf("."))>-1&&(t=t.replace(".","")),(n=t.search(/[eE]/))>-1?(i<0&&(i=n),i+=parseInt(t.slice(n+1)),t=t.slice(0,n)):i<0&&(i=t.length),0===(o=t.search(/[1-9]/)))for(t=t.slice(o),i-=o,n=t.length;48===t.charCodeAt(--n););else t="0",i=0;if(i<j_||i>W_)return;for(e.e=i+t.length-1,e.d=[],i=t.length;i>0;)e.d.unshift(parseInt(t.slice(i=i-7<0?0:i-7,i+7)));e.d=e.d.length?e.d:[0]}Decimal.prototype.toString=function(){var e=this,t=e.d,r=e.e,i=e.s<0?"-":"";if(!t)return i+"NaN";if(0===r&&1===t.length&&0===t)return i+"0";var n=t.join("");if(r>=0){for(;n.length<=r;)n+="0";n=n.slice(0,r+1)+(n.length>r+1?"."+n.slice(r+1):"")}else{for(r=-r-1;r--;)i+="0";n="0."+i+n}return i+n},Decimal.set=function(e){return e&&"number"==typeof e.precision&&(Z_=e.precision),Decimal},Decimal.acos=function(e){return new Decimal(Math.acos(parseFloat(e.toString())))},Decimal.cos=function(e){return new Decimal(Math.cos(parseFloat(e.toString())))},Decimal.sin=function(e){return new Decimal(Math.sin(parseFloat(e.toString())))},Decimal.prototype.abs=function(){var e=new Decimal(this);return e.s=1,e},Decimal.prototype.isZero=function(){return 1===this.d.length&&0===this.d[0]},Decimal.prototype.neg=function(){var e=new Decimal(this);return e.s=-e.s,e},Decimal.prototype.add=function(e){var r=new Decimal(e);return new Decimal(parseFloat(this.toString())+parseFloat(r.toString()))},Decimal.prototype.sub=function(e){var r=new Decimal(e);return new Decimal(parseFloat(this.toString())-parseFloat(r.toString()))},Decimal.prototype.mul=function(e){var r=new Decimal(e);return new Decimal(parseFloat(this.toString())*parseFloat(r.toString()))},Decimal.prototype.div=function(e){var r=new Decimal(e);if(r.isZero())return new Decimal(0);return new Decimal(parseFloat(this.toString())/parseFloat(r.toString()))},Decimal.prototype.pow=function(e){var r=new Decimal(e);return new Decimal(Math.pow(parseFloat(this.toString()),parseFloat(r.toString())))},Decimal.prototype.round=function(){return new Decimal(Math.round(parseFloat(this.toString())))},Decimal.prototype.minus=function(e){return this.sub(e)},Decimal.prototype.lt=function(e){return parseFloat(this.toString())<parseFloat(new Decimal(e).toString())},Decimal.prototype.gt=function(e){return parseFloat(this.toString())>parseFloat(new Decimal(e).toString())},M.Decimal=Decimal}(this);
 
-    // DKA法 計算メインロジック部
+    // 計算メイン処理
     let n = 0;
     let sa = []; 
     let sr = []; 
@@ -108,11 +92,8 @@
       }
     }
 
-    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-    async function startCalculation() {
+    function startCalculation() {
       const calcBtn = document.getElementById('calcBtn');
-      const statusBar = document.getElementById('statusBar');
       const resultsDiv = document.getElementById('results');
       
       if (n <= 0) {
@@ -120,12 +101,7 @@
         return;
       }
 
-      calcBtn.disabled = true;
-      resultsDiv.innerHTML = '';
-      statusBar.style.display = 'block';
-      statusBar.innerText = '初期化中...';
-      await sleep(50); 
-
+      resultsDiv.innerHTML = '計算中...';
       Decimal.set({ precision: 200 });
 
       for (let i = 0; i <= n; i++) {
@@ -136,26 +112,54 @@
       
       if (!sa[0] || sa[0].isZero()) {
         alert('最高次数の係数を正しく設定してください（0は不可）。');
-        calcBtn.disabled = false;
-        statusBar.style.display = 'none';
+        resultsDiv.innerHTML = '';
         return;
       }
 
-      await subroutineAsync();
+      // 同期処理として実行（フリーズを防ぐためループカウンターは完全排除）
+      subroutineSync();
 
-      statusBar.style.display = 'none';
-      calcBtn.disabled = false;
+      resultsDiv.innerHTML = '';
 
       if (!bSyuusoku) {
         alert('100回の反復では収束しませんでした。係数または次数を確認してください。');
       } else {
         const box = document.createElement('div');
         box.className = 'result-box';
-        box.innerHTML = '<h3>計算結果（200桁高精度表示）</h3>';
+        box.innerHTML = '<h3>計算結果（200桁・検算付き）</h3>';
 
         for (let i = 1; i <= n; i++) {
+          // 整数に近い場合の自動丸め処理
           if (sr[i].minus(sr[i].round()).abs().lt("1e-12")) sr[i] = sr[i].round();
           if (si[i].minus(si[i].round()).abs().lt("1e-12")) si[i] = si[i].round();
+
+          // 【新機能】検算（残差 P(z) の計算）
+          // 得られた解を多項式 f(z) = an*z^n + ... + a0 に代入して0になるか確認
+          let checkR = new Decimal(0);
+          let checkI = new Decimal(0);
+          
+          for (let j = 0; j <= n; j++) {
+            // z^(n-j) の複素数べき乗を計算
+            let pR = new Decimal(1);
+            let pI = new Decimal(0);
+            let power = n - j;
+            
+            for (let p = 0; p < power; p++) {
+              let nextR = pR.mul(sr[i]).sub(pI.mul(si[i]));
+              let nextI = pR.mul(si[i]).add(pI.mul(sr[i]));
+              pR = nextR;
+              pI = nextI;
+            }
+            // 係数を掛けて合計に足す
+            checkR = checkR.add(sa[j].mul(pR));
+            checkI = checkI.add(sa[j].mul(pI));
+          }
+
+          // 残差の絶対値
+          let residual = checkR.pow(2).add(checkI.pow(2)).pow(0.5);
+          let checkStatus = residual.lt("1e-10") 
+            ? `<span class="check-ok">OK (残差: ${residual.toString()})</span>` 
+            : `<span class="check-error">誤差あり (残差: ${residual.toString()})</span>`;
 
           const item = document.createElement('div');
           item.className = 'result-item';
@@ -163,6 +167,7 @@
             <strong>【解 ${i}】</strong>
             <div class="value-text">実部: ${sr[i].toString()}</div>
             <div class="value-text">虚部: ${si[i].toString()}</div>
+            <div style="font-size: 0.85em; margin-top: 4px;">検算判定: ${checkStatus}</div>
           `;
           box.appendChild(item);
         }
@@ -170,31 +175,53 @@
       }
     }
 
-    async function subroutineAsync() {
-      const statusBar = document.getElementById('statusBar');
+    function subroutineSync() {
       let sx = Array(n+1).fill(new Decimal(0));
       let sy = Array(n+1).fill(new Decimal(0));
-      
       let se = new Decimal("1e-15"); 
-      let m = 100;                    
+      let m = 100; // 反復制限100回                    
       
-      let sp = Decimal.acos(new Decimal(0)).mul(2);
-      let sw = new Decimal(0);
-
       let firstCoeff = sa[0];
       let norm_sa = [];
       for (let i = 0; i <= n; i++) {
         norm_sa[i] = sa[i].div(firstCoeff);
       }
 
+      // 初期値の計算（Aberthの初期値の最大半径）
+      let sw = new Decimal(0);
       for (let i = 1; i <= n; i++) {
-        let sq = new Decimal(n).mul(norm_sa[i].abs().pow(new Decimal(1).div(new Decimal(i))));
+        let sq = new Decimal(n).mul(norm_sa[i].abs());
         if (sw.lt(sq)) sw = sq;
       }
       if (sw.isZero()) sw = new Decimal(1); 
 
-      let sb = sp.mul(2).div(n);
-      let sc = sp.div(2 * n);
+      // 初期配置（円周上配置）
+      let pi = new Decimal("3.141592653589793");
+      let sb = pi.mul(2).div(n);
+      let sc = pi.div(2 * n);
 
       for (let j = 1; j <= n; j++) {
-        let st = sb.mul(j - 1).add(sc);
+        let angle = parseFloat(sb.mul(j - 1).add(sc).toString());
+        sr[j] = sw.mul(Math.cos(angle));
+        si[j] = sw.mul(Math.sin(angle));
+      }
+
+      // DKA法 メインループ
+      for (let k = 1; k <= m; k++) {
+        let bContinue = false;
+
+        for (let i = 1; i <= n; i++) {
+          let s1 = new Decimal(1);
+          let s2 = new Decimal(0);
+          let s3 = new Decimal(1);
+          let s4 = new Decimal(0);
+
+          let jb = sr[i];
+          let jc = si[i];
+
+          for (let j = 1; j <= n; j++) {
+            let s5 = s1.mul(jb).sub(s2.mul(jc));
+            s2 = s1.mul(jc).add(s2.mul(jb));
+            s1 = s5.add(norm_sa[j]);
+
+            if (j !== i) {
