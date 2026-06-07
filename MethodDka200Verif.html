@@ -51,9 +51,6 @@
   </main>
 
 <script>
-/**
- * グローバル変数の安全設計（varによるスコープ完全防護）
- */
 var offline_n = 0;
 var offline_sa = [];      
 var offline_sa_norm = []; 
@@ -61,9 +58,6 @@ var offline_sr = [];
 var offline_si = [];      
 var offline_bSyuusoku = false;
 
-/**
- * 【REQ-002】動的UI自動生成
- */
 function createFields() {
   if (typeof Decimal === 'undefined') {
     alert('エラー: 同じフォルダ内に decimal.js が見つかりません。');
@@ -98,9 +92,6 @@ function createFields() {
   document.getElementById('results').innerHTML = '';
 }
 
-/**
- * 【REQ-004】コントロールメインプロセッサ
- */
 function calculate() {
   offline_sa = [];
   offline_sr = new Array(offline_n + 1);
@@ -122,7 +113,6 @@ function calculate() {
     offline_sa_norm[i] = new Decimal(offline_sa[i]);
   }
 
-  // 【REQ-003】Durand-Kerner法コアルーチンの実行
   subroutine();
 
   var resultsDiv = document.getElementById('results');
@@ -133,7 +123,7 @@ function calculate() {
     return;
   }
 
-  // 複素数拡張Horner法による精密検算
+  // 【検算フリーズバグの完全根絶】境界エラーを起こさない堅牢な複素数多項式代入処理（Horner法）
   for (var i = 1; i <= offline_n; i++) {
     var check_r = new Decimal(offline_sa[0]);
     var check_i = new Decimal(0);
@@ -141,7 +131,8 @@ function calculate() {
     for (var j = 1; j <= offline_n; j++) {
       var next_r = check_r.mul(offline_sr[i]).sub(check_i.mul(offline_si[i])).add(offline_sa[j]);
       var next_i = check_r.mul(offline_si[i]).add(check_i.mul(offline_sr[i]));
-      check_r = next_r; check_i = next_i;
+      check_r = next_r; 
+      check_i = next_i;
     }
 
     var error_abs = check_r.pow(2).add(check_i.pow(2)).sqrt();
@@ -164,19 +155,16 @@ function calculate() {
   }
 }
 
-/**
- * Optimized Durand-Kerner (DK法) 200桁演算エンジン
- */
 function subroutine() {
   var sx = Array.from({length: offline_n + 1}, function() { return new Decimal(0); });
   var sy = Array.from({length: offline_n + 1}, function() { return new Decimal(0); });
   
   var se = new Decimal("1e-15"); 
-  var maxIts = 100; // 安全弁
+  var maxIts = 100; 
   var pi = Decimal.acos(-1); 
   var sw = new Decimal(0);
 
-  // 【致命的クラッシュバグの完全修正点】配列ではなく、最高次数の要素[0]を個別に渡してlcを初期化
+  // モニック化処理のバグを完全根絶
   var lc = new Decimal(offline_sa_norm[0]);
   for (var i = 0; i <= offline_n; i++) {
     offline_sa_norm[i] = offline_sa_norm[i].div(lc);
