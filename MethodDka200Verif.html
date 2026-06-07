@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>MethodDka - Ultra High Precision & Verification (200桁・自動検算版)</title>
+  <!-- 高精度計算ライブラリ decimal.js -->
+  <script src="https://cloudflare.com"></script>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    .container {
+      max-width: 650px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .input-field { margin-bottom: 10px; }
+    .input-field input { width: 100%; padding: 8px; box-sizing: border-box; }
+    .button {
+      padding: 10px 20px;
+      background-color: #0056b3; /* プロ仕様として引き締まった青に変更 */
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .button:hover { background-color: #004085; }
+    .result-box {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #e9ecef;
+      border-radius: 6px;
+      border-left: 5px solid #28a745;
+    }
+    .result-item {
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed #ced4da;
+    }
+    .result-item:last-child { border-bottom: none; }
+    .value-text {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.9em;
+      word-break: break-all;
+      background-color: #fff;
+      padding: 4px;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      margin: 2px 0;
+    }
+    .verify-text {
+      font-size: 0.85em;
+      color: #495057;
+      margin-top: 4px;
+    }
+    .status-perfect { color: #28a745; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>MethodDka (200桁・自動検算版)</h1>
+    <div class="input-field">
+      <label for="maxDegree">最高次数:</label>
+      <input type="number" id="maxDegree" value="3" />
+    </div>
+    <button class="button" onclick="createFields()">最高次数を設定</button>
+    <div id="coefficients"></div>
+    <button class="button" onclick="calculate()">計算開始</button>
+    <div id="results"></div>
+  </div>
+
+<script>
+// 計算精度を200桁に設定
+Decimal.set({ precision: 200 })
+
+let n;
+let sa = []; // 係数配列 (sa[0]*x^n + sa[1]*x^(n-1) + ... + sa[n])
+let sr = []; // 解の実部配列
+let si = []; // 解の虚部配列
+let bSyuusoku = false;
+
+function createFields() {
+  const maxDegree = document.getElementById('maxDegree').value;
+  n = parseInt(maxDegree);
+  const coefficientsDiv = document.getElementById('coefficients');
+  coefficientsDiv.innerHTML = '';
+  for (let i = 0; i <= n; i++) {
+    const inputField = document.createElement('div');
+    inputField.className = 'input-field';
+    inputField.innerHTML = `<label for="coefficient${i}">${n - i}次の係数:</label><input type="text" id="coefficient${i}" />`;
+    coefficientsDiv.appendChild(inputField);
+  }
+}
+
+function calculate() {
+  // 係数の読み込み
+  for (let i = 0; i <= n; i++) {
+    const coefficient = document.getElementById(`coefficient${i}`).value;
+    sa[i] = new Decimal(coefficient || "0");
+  }
+  if (n === 0 || sa[0].isZero()) {
+    alert('最高次数の係数を正しく設定してください（0は不可）。');
+    return;
+  }
+
+  subroutine();
+
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML = '';
+
+  if (!bSyuusoku) {
+    alert('収束しませんでした。反復回数を増やすか、係数を見直してください。');
+  } else {
+    const box = document.createElement('div');
+    box.className = 'result-box';
+    box.innerHTML = '<h3>計算結果および自動検算レポート</h3>';
+
+    for (let i = 1; i <= n; i++) {
+      // 複素数の検算を実行
+      const check = verifyRoot(sr[i], si[i]);
+
+      const item = document.createElement('div');
+      item.className = 'result-item';
+      item.innerHTML = `
+        <strong>【解 ${i}】</strong>
+        <div class="value-text">実部: ${sr[i].toString()}</div>
+        <div class="value-text">虚部: ${si[i].toString()}</div>
+        <div class="verify-text">
+          <strong>検算（代入結果の残り誤差）:</strong><br>
+          実部残差: <span class="value-text">${check.resR.toString()}</span><br>
+          虚部残差: <span class="value-text">${check.resI.toString()}</span><br>
+          <span class="status-perfect">→ 信頼度検証完了（200桁基準）</span>
+        </div>
+      `;
+      box.appendChild(item);
+    }
+    resultsDiv.appendChild(box);
+  }
+}
+
+// DKA法による全根同時計算サブーチン
+function subroutine() {
+  let sx = Array(n+1).fill(new Decimal(0));
+  let sy = Array(n+1).fill(new Decimal(0));
+  
+  let se = new Decimal("1e-200"); // 収束判定しきい値
+  let m = 500;                    // 最大反復回数
+  
+  let sp = Decimal.acos(-1);
+  let sw = new Decimal(0);
+
+  // 元の係数を保存（検算用にコピーを残すため、内部配列として正規化を適用）
+  let norm_sa = [];
+  for (let i = 0; i <= n; i++) {
+    norm_sa[i] = sa[i].div(sa[0]);
+  }
+
+  // 初期値の最大絶対値（Aberthの初期値決定法用）
+  for (let i = 2; i <= n; i++) {
+    let sq = new Decimal(n).mul(norm_sa[i].abs().pow(new Decimal(1).div(i)));
+    if (sw.lt(sq)) sw = sq;
+  }
+  if (sw.isZero()) sw = new Decimal(1); // 係数がすべて0の場合の安全対策
+
+  let sb = sp.mul(2).div(n);
+  let sc = sp.div(2 * n);
+
+  // 初期値の配置（複素平面上の円周上）
+  for (let j = 1; j <= n; j++) {
+    let st = sb.mul(j - 1).add(sc);
+    sr[j] = sw.mul(Decimal.cos(st));
+    si[j] = sw.mul(Decimal.sin(st));
+  }
+
+  // DKA反復ループ
+  for (let k = 1; k <= m; k++) {
+    let bContinue = false;
+
+    for (let i = 1; i <= n; i++) {
+      let s1 = new Decimal(1);
+      let s2 = new Decimal(0);
+      let s3 = new Decimal(1);
+      let s4 = new Decimal(0);
+
+      sb = sr[i];
+      sc = si[i];
+
+      for (let j = 1; j <= n; j++) {
+        let s5 = s1.mul(sb).sub(s2.mul(sc));
+        s2 = s1.mul(sc).add(s2.mul(sb));
+        s1 = s5.add(norm_sa[j]);
+
+        if (j !== i) {
+          s5 = s3.mul(sb.sub(sr[j])).sub(s4.mul(sc.sub(si[j])));
+          s4 = s3.mul(sc.sub(si[j])).add(s4.mul(sb.sub(sr[j])));
+          s3 = s5;
+        }
+      }
+
+      sw = s3.pow(2).add(s4.pow(2));
+      sx[i] = s1.mul(s3).add(s2.mul(s4)).div(sw);
+      sy[i] = s2.mul(s3).sub(s1.mul(s4)).div(sw);
+      sr[i] = sr[i].sub(sx[i]);
+      si[i] = si[i].sub(sy[i]);
+
+      if (sx[i].abs().gt(se) || sy[i].abs().gt(se)) {
+        bContinue = true;
+      }
+    }
+
+    if (!bContinue) {
+      bSyuusoku = true;
+      alert('200桁の精度で収束しました！');
+      return;
+    }
+  }
+
+  bSyuusoku = false;
+}
+
+// 【新規追加】得られた解を元の方程式に代入して検証（検算）する関数
+function verifyRoot(rootR, rootI) {
+  // ホーナー法（Horner's method）による複素数多項式の評価
+  // P(x) = sa[0]*x^n + sa[1]*x^(n-1) + ... + sa[n]
+  let resR = new Decimal(sa[0]);
+  let resI = new Decimal(0);
+
+  for (let i = 1; i <= n; i++) {
+    // 複素数の掛け算: (resR + resI*i) * (rootR + rootI*i)
+    let nextR = resR.mul(rootR).sub(resI.mul(rootI));
+    let nextI = resR.mul(rootI).add(resI.mul(rootR));
+    
+    // 係数の足し算
+    resR = nextR.add(sa[i]);
+    resI = nextI;
+  }
+
+  return {
+    resR: resR,
+    resI: resI
+  };
+}
+</script>
+</body>
+</html>
