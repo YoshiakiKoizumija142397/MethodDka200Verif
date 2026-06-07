@@ -23,6 +23,7 @@
     .validation-box { margin-top: 15px; padding: 15px; background-color: #fff3e0; border: 1px solid #ffe0b2; border-radius: 6px; font-size: 14px; }
     .validation-title { font-weight: bold; color: #e65100; margin-bottom: 8px; }
     .validation-row { display: flex; justify-content: space-between; font-family: monospace; }
+    .error-highlight { color: #d84315; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -43,6 +44,7 @@
     <form id="polynomial-form" onsubmit="return false;">
       <div id="coefficients"></div>
       <div id="calc-button-container" style="display:none;">
+        <!-- 【バグ修正点】ボタンのonclick内の関数名をすべて小文字の "calculate()" に完全に統一 -->
         <button class="button" onclick="calculate()">計算＆自動検算を開始</button>
       </div>
     </form>
@@ -92,6 +94,7 @@ function createFields() {
   document.getElementById('results').innerHTML = '';
 }
 
+// 【バグ修正点】関数名の綴りと大文字・小文字を完全に "calculate" へ統一
 function calculate() {
   offline_sa = [];
   offline_sr = new Array(offline_n + 1);
@@ -103,7 +106,8 @@ function calculate() {
     catch(e) { alert((offline_n - i) + '次の係数の入力形式が正しくありません。'); return; }
   }
 
-  if (offline_sa.isZero()) { 
+  // 【106行目バグの完全修正】配列 sa オブジェクト全体ではなく、先頭要素 sa[0] に対して適切に .isZero() を判定
+  if (offline_sa[0].isZero()) { 
     alert('最高次の係数 (a_n) に 0 は指定できません。'); 
     return; 
   }
@@ -147,8 +151,8 @@ function calculate() {
         '<div class="validation-title">⚙️ 200桁高精度自動検算 (Horner法残差評価)</div>' +
         '<div class="validation-row"><span>実部残差 Re(P(z)):</span><span>' + check_r.toExponential(10) + '</span></div>' +
         '<div class="validation-row"><span>虚部残差 Im(P(z)):</span><span>' + check_i.toExponential(10) + '</span></div>' +
-        '<div class="validation-row" style="margin-top:5px; border-top:1px solid #ffe0b2; padding-top:5px; font-weight:bold; color:#d84315;">' +
-          '<span>絶対誤差 ||P(z)||:</span><span>' + error_abs.toExponential(5) + '</span>' +
+        '<div class="validation-row" style="margin-top:5px; border-top:1px solid #ffe0b2; padding-top:5px;">' +
+          '<span>絶対誤差 ||P(z)||:</span><span class="error-highlight">' + error_abs.toExponential(5) + '</span>' +
         '</div>' +
       '</div>';
     resultsDiv.appendChild(card);
@@ -164,14 +168,13 @@ function subroutine() {
   var pi = Decimal.acos(-1); 
   var sw = new Decimal(0);
 
-  // 正規化処理のバグを完全根絶
+  // 配列 sa_norm の先頭データを指定してlcを安全に初期化
   var lc = new Decimal(offline_sa_norm[0]);
   for (var i = 0; i <= offline_n; i++) {
     offline_sa_norm[i] = offline_sa_norm[i].div(lc);
   }
 
-  // 【致命的フリーズの完全解決修正】
-  // decimal.js-lightが非対応の小数べき乗計算を、標準のMath.powを用いて安全に事前評価。NaN化を完全封印。
+  // 軽量版ライブラリが非対応の小数べき乗計算を、標準のMath.powを用いて安全に事前評価。
   for (var i = 1; i <= offline_n; i++) {
     var rawNum = Math.abs(parseFloat(offline_sa_norm[i].toString()));
     var valSq = Math.pow(rawNum, 1 / i) * offline_n;
@@ -188,7 +191,6 @@ function subroutine() {
     offline_si[j] = sw.mul(Decimal.sin(st));
   }
 
-  // 補正メインループ
   for (var k = 1; k <= maxIts; k++) {
     var bContinue = false;
     for (var i = 1; i <= offline_n; i++) {
@@ -227,7 +229,6 @@ function subroutine() {
     
     if (!bContinue) {
       offline_bSyuusoku = true;
-      alert(k + "回目の反復で正常に収束しました。");
       return;
     }
   }
