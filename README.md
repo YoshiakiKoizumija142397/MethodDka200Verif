@@ -1,46 +1,39 @@
 # MethodDka - 200-Digit Precision Polynomial Solver with Complex Residual Verification
 
-[![JavaScript](https://shields.io)](https://mozilla.org)
-[![Precision](https://shields.io)]()
-[![Environment](https://shields.io)]()
+[![Project Status: Requirement Specified](https://shields.io)]()
+[![Precision Requirement](https://shields.io)]()
 
-本プロジェクトは、複素数多項式（代数方程式）のすべての根を同時に決定する**Durand-Kerner (DK) 法**（別名: MethodDka）の実装です。
-一般的な64ビット環境の限界を遥かに超越した**「小数点以下200桁」**の極限の精度で計算を行い、さらに求まった解の理論的正当性をその場で証明する**「Horner法拡張型の自動検算（残差評価）システム」**を完全にローカル（オフライン）環境向けに統合・最適化した数値計算ソフトウェアのマスターリポジトリです。
+本リポジトリは、複素数多項式のすべての根を同時に決定する**Durand-Kerner (DK) 法**（MethodDka）を用いた、小数点以下200桁の超高精度多項式解法およびHorner法拡張型自動検算システムの**「ソフトウェア開発要求仕様書」**です。
 
 ---
 
-## 🎯 開発目的と仕様要件 (Requirements Specification)
+## 🎯 ソフトウェア要求定義 (Software Requirements Specification)
 
-本システムは、以下の厳格な数値計算およびUI要件を満たすように設計されています。
+本システムの実装コード（将来開発される成果物）が満たすべき、数学的および数値計算的な厳格な要件は以下の通りです。
 
-1. **完全なローカル・スタンドアロン動作**
-   * 外部ネットワーク（インターネット）への通信を一切行わず、セキュリティ制限（CORSエラー等）に干渉されない「ファイル分割構成」を採用。
-   * 同一フォルダ内の `./decimal.js` から超高精度浮動小数点演算エンジンを安全にロードする。
-2. **動的UIの完全性と堅牢性**
-   * ユーザーが指定した最高次数 n に基づき、エラー（`TypeError` や変数の未初期化エラー）を一切起こさず、入力欄（\(a_n\) から a₀ まで）を100%確実に動的展開する。
-3. **200桁多精度複素数演算の安定収束**
-   * 最大反復ループ数を `800回`、収束判定の許容値を `1e-195` に設定。
-   * 第8世代インテルプロセッサ（Windows 11）環境下のブラウザがハングアップ（フリーズ）しないよう、計算ステップごとの負荷バランスを極限まで最適化する。
-4. **Horner法（複素数拡張版）による厳密な残差評価**
-   * 計算完了直後、求まった各複素数解を元の多項式 P(z) にHorner法を用いて最速かつ丸め誤差を最小に抑えて代入。
-   * 得られた実部残差、虚部残差、および複素絶対誤差を精密な指数表記（例: `1.2345e-196`）で出力し、数学的に正しく解けていることをユーザー自身が検証できるようにする。
+### 1. ランタイム環境要件 (Runtime Environment)
+* **オフラインファースト構成:** ブラウザのローカルセキュリティ制限（CORSポリシー）に妨害されずオフラインで安定稼働するため、同一フォルダ内の `./decimal.js` から演算エンジンを静的ロードすること。
+* **ターゲット:** Windows 11（第8世代インテルプロセッサ環境）上のモダンブラウザ環境でハングアップ（フリーズ）せずに動作すること。
+
+### 2. コア演算アルゴリズム要件 (Core Math Algorithms)
+* **解探索エンジン:** Durand-Kerner法（漸化式補正ループ数: 最大800回、収束条件: 10⁻¹⁹⁵）を採用し、複素数の根を同時に200桁まで追い込むこと。
+* **自動検算エンジン:** 複素数拡張版Horner法（ホーナー法）を採用。求まった各解を元の多項式 P(z) に代入し、実部残差・虚部残差、および絶対誤差を精密な指数表記（例: `1.23e-196`）で自動出力すること。
+
+### 3. UI/UX 展開要件 (User Interface)
+* 入力された最高次数 n に対し、JavaScriptの変数未初期化エラーやスコープ競合を完全に排除し、\(a_n\) から a₀ までの係数入力欄を100%確実に動的自動展開すること。
 
 ---
 
-## 📁 ディレクトリ構成 (Directory Structure)
+## 📁 リポジトリ構成要件 (Repository Directory standard)
 
-手動アップロードおよびローカル検証を行うため、1つのフォルダ内に以下の構成を維持します。
+本プロジェクトは、仕様書と成果物を一元管理するため、以下の世界標準の構成を厳守します。
 
 ```text
-📁 MethodDka200/  (任意の検証用フォルダ)
-├── 📄 MethodDkaVerif.html  (ローカルデバッグ・検証用メインコード)
-├── 📄 index.html           (世界標準準拠・上記と同一内容の複製)
-├── 📄 decimal.js          (公式高精度演算ライブラリ本体 - 別途配置)
-└── 📄 README.md            (本仕様書)
+📁 MethodDka200/
+├── 📄 index.html      (開発要求仕様書・グラフィカルWebポータル)
+├── 📄 README.md        (本仕様書・リポジトリ解説ドキュメント)
+└── 📄 [decimal.js]     (※将来のデバッグ検証時に同階層に配置する高精度ライブラリ)
 ```
-
-### ⚠ 事前準備
-同じフォルダに公式の [cdnjs(decimal.min.js)](https://cloudflare.com) のソースコードを丸ごとコピーした **`decimal.js`** を配置してください。
 
 ---
 
@@ -54,3 +47,15 @@
 ## 📄 ライセンス (License)
 
 This project is licensed under the MIT License.
+
+---
+
+## 👤 開発者情報 & 謝辞 (Developer Profile & Acknowledgments)
+
+* **設計・開発責任者:** Yoshiaki Koizumi (小泉 嘉章)
+* **公式GitHubリポジトリ:** [YoshiakiKoizumija142397](https://github.com)
+* **活動拠点:** 日本、茨城県牛久市 (Ushiku city, Ibaraki pref, Japan)
+* **公式サイト:** [https://jimdofree.com](https://jimdofree.com)
+
+> ### 🙏 謝辞 (Acknowledgments)
+> 本要求仕様書および数理設計は、**Microsoft Windows Copilot** と **Google Gemini** によって生成されました。ここに深く感謝申し上げます。
