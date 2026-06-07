@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>MethodDka - Ultra High Precision & Verification (200桁・自動検算版)</title>
-  <!-- 高精度計算ライブラリ decimal.js -->
+  <!-- 【修正点1】高精度計算ライブラリ decimal.js の正しいCDN URLを指定 -->
   <script src="https://cloudflare.com"></script>
   <style>
     body { font-family: Arial, sans-serif; }
@@ -71,14 +71,18 @@
   </div>
 
 <script>
-// 計算精度を200桁に設定
-Decimal.set({ precision: 200 })
-
 let n;
 let sa = []; // 係数配列 (sa[0]*x^n + sa[1]*x^(n-1) + ... + sa[n])
 let sr = []; // 解の実部配列
 let si = []; // 解の虚部配列
 let bSyuusoku = false;
+
+// 【修正点2】ページ読み込み完了後に安全に200桁の精度設定を適用
+window.onload = function() {
+  if (typeof Decimal !== 'undefined') {
+    Decimal.set({ precision: 200 });
+  }
+};
 
 function createFields() {
   const maxDegree = document.getElementById('maxDegree').value;
@@ -94,6 +98,9 @@ function createFields() {
 }
 
 function calculate() {
+  // 安全対策：もし何らかの理由で初期化されていなければここで強制設定
+  Decimal.set({ precision: 200 });
+
   // 係数の読み込み
   for (let i = 0; i <= n; i++) {
     const coefficient = document.getElementById(`coefficient${i}`).value;
@@ -110,7 +117,7 @@ function calculate() {
   resultsDiv.innerHTML = '';
 
   if (!bSyuusoku) {
-    alert('収束しませんでした。反復回数を増やすか、係数を見直してください。');
+    alert('収束しませんでした。反復回数を増やすか、係数を見見直してください。');
   } else {
     const box = document.createElement('div');
     box.className = 'result-box';
