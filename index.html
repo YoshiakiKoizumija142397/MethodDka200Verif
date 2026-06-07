@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Software Requirements Specification - MethodDka 200-Digit Solver</title>
+  <style>
+    :root {
+      --primary-color: #1b5e20;
+      --primary-light: #e8f5e9;
+      --secondary-color: #37474f;
+      --bg-color: #f8f9fa;
+      --surface-color: #ffffff;
+      --text-main: #212121;
+      --text-muted: #666666;
+      --border-color: #cfd8dc;
+      --accent-color: #e65100;
+      --font-stack: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      --font-mono: 'Courier New', Courier, monospace;
+    }
+
+    body {
+      font-family: var(--font-stack);
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 40px 20px;
+      line-height: 1.7;
+    }
+
+    .spec-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: var(--surface-color);
+      padding: 40px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+
+    .header-block {
+      border-bottom: 3px double var(--primary-color);
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+
+    .badge-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .repo-badge {
+      display: inline-block;
+      background-color: var(--primary-light);
+      color: var(--primary-color);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    h1 {
+      font-size: 28px;
+      color: var(--primary-color);
+      margin: 0 0 10px 0;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin: 0;
+      font-weight: 500;
+    }
+
+    h2 {
+      font-size: 20px;
+      color: var(--secondary-color);
+      margin-top: 35px;
+      margin-bottom: 15px;
+      border-left: 5px solid var(--primary-color);
+      padding-left: 12px;
+    }
+
+    p {
+      margin: 0 0 15px 0;
+      color: #37474f;
+    }
+
+    .req-card {
+      background-color: #fff;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 15px 20px;
+      margin-bottom: 15px;
+    }
+
+    .req-id {
+      font-family: var(--font-mono);
+      font-weight: bold;
+      color: var(--accent-color);
+      font-size: 13px;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .req-title {
+      font-weight: bold;
+      font-size: 16px;
+      color: var(--secondary-color);
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .code-block {
+      font-family: var(--font-mono);
+      background-color: #f1f3f4;
+      padding: 15px;
+      border-radius: 6px;
+      font-size: 14px;
+      overflow-x: auto;
+      border: 1px solid #e0e0e0;
+      margin: 15px 0;
+    }
+
+    .profile-box {
+      background-color: #fafafa;
+      border: 1px dashed var(--border-color);
+      border-radius: 6px;
+      padding: 15px 20px;
+      margin-top: 25px;
+    }
+
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 5px 10px;
+      font-size: 14px;
+    }
+
+    .profile-label {
+      font-weight: bold;
+      color: var(--secondary-color);
+    }
+
+    .acknowledgment-box {
+      background-color: #f1f8e9;
+      border-left: 4px solid var(--primary-color);
+      padding: 15px;
+      margin-top: 15px;
+      font-size: 14px;
+      font-style: italic;
+      color: #2e7d32;
+    }
+
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      font-size: 13px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    
+    a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="spec-container">
+    <header class="header-block">
+      <div class="badge-group">
+        <span class="repo-badge">GitHub Global Standard Spec</span>
+      </div>
+      <h1>ソフトウェア開発要求仕様書 ポータル</h1>
+      <p class="subtitle">MethodDka - 200桁超高精度多項式解法 &amp; 複素数自動検算システム</p>
+    </header>
+
+    <section>
+      <h2>1. 概要 (Overview)</h2>
+      <p>
+        本ドキュメント（index.html）は、同階層に配置された <code>README.md</code> と完全に対をなし、将来的に実装される「200桁高精度多項式Solver」の機能要件およびデザイン要件をグラフィカルに定義する<strong>要求仕様書（ポータルサイト）</strong>です。本ファイル自体には数値解析プログラムのロジックは一切含まず、開発仕様の提示に特化しています。
+      </p>
+    </section>
+
+    <section>
+      <h2>2. システム要求要件 (System Requirements)</h2>
+      
+      <div class="req-card">
+        <span class="req-id">[REQ-001] ランタイム環境要件</span>
+        <span class="req-title">完全ローカル独立稼働（CORSブロックの完全回避）</span>
+        <p>ブラウザのローカルセキュリティ制限に干渉されることなくオフラインで安定稼働するため、同一フォルダ内に配置された多精度演算ライブラリ <code>./decimal.js</code> から演算コアを静的にロードする設計にすること。</p>
+      </div>
+
+      <div class="req-card">
+        <span class="req-id">[REQ-002] UI挙動要件</span>
+        <span class="req-title">未初期化エラーを排除した動的UI展開</span>
+        <p>最高次数 n のユーザー入力に対し、JavaScriptのスコープ競合や未初期化エラー（<code>Cannot access before initialization</code>）を完全に根絶し、a_n から a_0 までの係数入力欄を100%確実に動的自動生成すること。</p>
+      </div>
+
+      <div class="req-card">
+        <span class="req-id">[REQ-003] コア演算要件</span>
+        <span class="req-title">200桁多精度複素数演算の安定収束</span>
+        <p>最大反復ループ数を <code>800回</code>、収束条件（許容値）を <code>1e-195</code> に設定。第8世代インテルプロセッサ（Windows 11環境）上のブラウザで、ハングアップ（応答なし）を起こさない最適な計算負荷バランスを担保すること。</p>
+      </div>
+
+      <div class="req-card">
+        <span class="req-id">[REQ-004] 検証演算要件</span>
+        <span class="req-title">複素数拡張Horner法による残差評価システム</span>
+        <p>解の収束直後、求まった各複素数解を元の多項式 P(z) に代入する検算を実施すること。計算負荷と丸め誤差の伝播を最小限に抑えるため、Horner法（複素数拡張版）を採用し、実部残差、虚部残差、および絶対誤差を精密な指数表記（例: <code>1.2345e-196</code>）で出力すること。</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>3. リポジトリ構成仕様 (Directory Layout Spec)</h2>
+      <p>世界標準リポジトリのルールに準拠し、無駄な複製ファイルを一切排除した以下の3ファイル構成で管理・運用します。</p>
+      <div class="code-block">
+📁 MethodDka200/<br>
+├── 📄 index.html      (本ドキュメント：開発要求仕様書ポータル)<br>
+├── 📄 README.md        (テキスト形式の開発要求仕様書・リポジトリ説明書)<br>
+└── 📄 [decimal.js]     (※将来のデバッグ検証時に同階層に配置する高精度ライブラリ)
+      </div>
+    </section>
+
+    <section>
+      <h2>4. 開発者情報 &amp; 謝辞 (Developer Profile &amp; Acknowledgments)</h2>
+      <div class="profile-box">
+        <div class="profile-grid">
+          <div class="profile-label">設計責任者:</div>
+          <div>Yoshiaki Koizumi (小泉 芳章)</div>
+          <div class="profile-label">GitHub:</div>
+          <div><a href="https://github.com" target="_blank" rel="noopener">://github.com</a></div>
+          <div class="profile-label">活動拠点:</div>
+          <div>日本、茨城県牛久市 (Ushiku city, Ibaraki pref, Japan)</div>
+          <div class="profile-label">公式サイト:</div>
+          <div><a href="https://jimdofree.com" target="_blank" rel="noopener">://jimdofree.com</a></div>
+        </div>
+        
+        <div class="acknowledgment-box">
+          <strong>🙏 謝辞 (Acknowledgments):</strong><br>
+          本要求仕様書および数理設計は、Microsoft Windows Copilot と Google Gemini によって生成されました。ここに深く感謝申し上げます。
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>© 2026 Yoshiaki Koizumi. All Rights Reserved.</p>
+      <p style="font-size:11px; margin-top:5px;">MethodDka Project - Software Requirements Specification Document</p>
+    </footer>
+  </main>
+
+</body>
+</html>
