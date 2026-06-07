@@ -44,7 +44,6 @@
     <form id="polynomial-form" onsubmit="return false;">
       <div id="coefficients"></div>
       <div id="calc-button-container" style="display:none;">
-        <!-- 【バグ修正点】ボタンのonclick内の関数名をすべて小文字の "calculate()" に完全に統一 -->
         <button class="button" onclick="calculate()">計算＆自動検算を開始</button>
       </div>
     </form>
@@ -94,7 +93,6 @@ function createFields() {
   document.getElementById('results').innerHTML = '';
 }
 
-// 【バグ修正点】関数名の綴りと大文字・小文字を完全に "calculate" へ統一
 function calculate() {
   offline_sa = [];
   offline_sr = new Array(offline_n + 1);
@@ -106,7 +104,6 @@ function calculate() {
     catch(e) { alert((offline_n - i) + '次の係数の入力形式が正しくありません。'); return; }
   }
 
-  // 【106行目バグの完全修正】配列 sa オブジェクト全体ではなく、先頭要素 sa[0] に対して適切に .isZero() を判定
   if (offline_sa[0].isZero()) { 
     alert('最高次の係数 (a_n) に 0 は指定できません。'); 
     return; 
@@ -168,8 +165,9 @@ function subroutine() {
   var pi = Decimal.acos(-1); 
   var sw = new Decimal(0);
 
-  // 配列 sa_norm の先頭データを指定してlcを安全に初期化
-  var lc = new Decimal(offline_sa_norm[0]);
+  // 【バグの完全根絶修正：lcの配列インデックスに [0] を正確に指定】
+  // 配列全体の文字結合暴走を完全に封印し、最高次係数オブジェクトを正しく抽出して正規化
+  var lc = new Decimal(offline_sa_norm[0].toString());
   for (var i = 0; i <= offline_n; i++) {
     offline_sa_norm[i] = offline_sa_norm[i].div(lc);
   }
@@ -229,6 +227,7 @@ function subroutine() {
     
     if (!bContinue) {
       offline_bSyuusoku = true;
+      alert(k + "回目の反復で正常に収束しました。");
       return;
     }
   }
