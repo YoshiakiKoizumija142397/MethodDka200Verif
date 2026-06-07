@@ -66,7 +66,7 @@ var offline_bSyuusoku = false;
  */
 function createFields() {
   if (typeof Decimal === 'undefined') {
-    alert('エラー: 同じフォルダ内に decimal.js が見つからないか、読み込みに失敗しています。');
+    alert('エラー: 同じフォルダ内に decimal.js が見つかりません。');
     return;
   }
   Decimal.set({ precision: 200 });
@@ -99,7 +99,7 @@ function createFields() {
 }
 
 /**
- * 【REQ-004】コントロールメインプロセッサ（解析 -> 探索 -> 検算）
+ * 【REQ-004】コントロールメインプロセッサ
  */
 function calculate() {
   offline_sa = [];
@@ -112,14 +112,15 @@ function calculate() {
     catch(e) { alert((offline_n - i) + '次の係数の入力形式が正しくありません。'); return; }
   }
 
-  // 【バグ完全根絶点】配列オブジェクト全体ではなく、先頭要素「offline_sa[0]」に対して適切に .isZero() を判定
   if (offline_sa[0].isZero()) { 
     alert('最高次の係数 (a_n) に 0 は指定できません。'); 
     return; 
   }
 
   offline_sa_norm = [];
-  for(var i = 0; i <= offline_n; i++) offline_sa_norm[i] = new Decimal(offline_sa[i]);
+  for(var i = 0; i <= offline_n; i++) {
+    offline_sa_norm[i] = new Decimal(offline_sa[i]);
+  }
 
   // 【REQ-003】Durand-Kerner法コアルーチンの実行
   subroutine();
@@ -128,11 +129,11 @@ function calculate() {
   resultsDiv.innerHTML = '';
 
   if (!offline_bSyuusoku) {
-    alert('指定された反復回数（800回）以内で収束条件を満たせませんでした。計算を安全に停止します。');
+    alert('収束条件を満たせませんでした。');
     return;
   }
 
-  // 複素数拡張Horner法による精密検算と表示用変数名の完全一致
+  // 複素数拡張Horner法による精密検算
   for (var i = 1; i <= offline_n; i++) {
     var check_r = new Decimal(offline_sa[0]);
     var check_i = new Decimal(0);
@@ -164,18 +165,18 @@ function calculate() {
 }
 
 /**
- * Optimized Durand-Kerner (DK法) 200桁安定演算ロジック
+ * Optimized Durand-Kerner (DK法) 200桁演算エンジン
  */
 function subroutine() {
   var sx = Array.from({length: offline_n + 1}, function() { return new Decimal(0); });
   var sy = Array.from({length: offline_n + 1}, function() { return new Decimal(0); });
   
   var se = new Decimal("1e-15"); 
-  var maxIts = 100; // フリーズを完璧に防ぐ安全弁
+  var maxIts = 100; // 安全弁
   var pi = Decimal.acos(-1); 
   var sw = new Decimal(0);
 
-  // 配列指定ミスを完全に根絶：lcに「offline_sa_norm[0]」のインスタンスを代入
+  // 【致命的クラッシュバグの完全修正点】配列ではなく、最高次数の要素[0]を個別に渡してlcを初期化
   var lc = new Decimal(offline_sa_norm[0]);
   for (var i = 0; i <= offline_n; i++) {
     offline_sa_norm[i] = offline_sa_norm[i].div(lc);
