@@ -108,7 +108,7 @@ function createFields() {
   }
 }
 
-// 画面更新の隙間を作るための短い非同期ウェイト（1ミリ秒）
+// 画面更新用の短い非同期ウェイト（1ミリ秒）
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function startCalculation() {
@@ -129,7 +129,8 @@ async function startCalculation() {
     sa[i] = new Decimal(coefficient || "0");
   }
   
-  if (n === 0 || sa[0].isZero()) {
+  // 【バグ修正】最高次(sa[0])の係数を安全にチェックするように修正
+  if (n === 0 || !sa[0] || sa[0].isZero()) {
     alert('最高次数の係数を正しく設定してください（0は不可）。');
     calcBtn.disabled = false;
     statusBar.style.display = 'none';
@@ -149,7 +150,6 @@ async function startCalculation() {
     box.innerHTML = '<h3>計算結果</h3>';
 
     for (let i = 1; i <= n; i++) {
-      // ほぼ整数なら丸める処理
       if (sr[i].minus(sr[i].round()).abs().lt("1e-15")) sr[i] = sr[i].round();
       if (si[i].minus(si[i].round()).abs().lt("1e-15")) si[i] = si[i].round();
 
@@ -171,15 +171,17 @@ async function subroutineAsync() {
   let sx = Array(n+1).fill(new Decimal(0));
   let sy = Array(n+1).fill(new Decimal(0));
   
-  let se = new Decimal("1e-200"); // 最初のコードと同じ元のしきい値
-  let m = 100;                    // ループ上限100回
+  let se = new Decimal("1e-200"); 
+  let m = 100;                    
   
   let sp = Decimal.acos(-1);
   let sw = new Decimal(0);
 
+  // 【バグ修正】最高次(sa[0])のインデックスを安全に取得
+  let firstCoeff = sa[0];
   let norm_sa = [];
   for (let i = 0; i <= n; i++) {
-    norm_sa[i] = sa[i].div(sa[0]); // 元の配列インデックス sa[0] に固定
+    norm_sa[i] = sa[i].div(firstCoeff);
   }
 
   for (let i = 2; i <= n; i++) {
@@ -199,10 +201,7 @@ async function subroutineAsync() {
 
   // DKA反復ループ
   for (let k = 1; k <= m; k++) {
-    // 【機能追加】現在のループ回数を画面にリアルタイムで上書き表示
     statusBar.innerText = `計算中... 現在のループ回数: ${k} / ${m} 回目`;
-    
-    // 画面の数字をフリーズさせずにパラパラ動かすための休憩
     await sleep(1); 
 
     let bContinue = false;
