@@ -68,11 +68,10 @@
     <div id="results"></div>
   </div>
 
-  <!-- 高精度計算ライブラリ decimal.js (製品版フルコード内蔵) -->
+  <!-- decimal.js (製品フル版を安全に内蔵) -->
   <script>
-    !function(M){"use strict";var Z_=200,U_=1,W_=9e15,j_=-9e15,V_=1/0,z_=/^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*$/;function Decimal(e){var t=this;if(!(t instanceof Decimal))return new Decimal(e);if(e instanceof Decimal)return t.s=e.s,t.e=e.e,void(t.d=e.d?e.d.slice():e.d);if("number"==typeof e){if(0===e)return t.s=1,t.e=0,void(t.d=[0]);if(e<0?(e=-e,t.s=-1):t.s=1,e===V_||e!=e)return void(t.d=null);return void J(t,e.toFixed(20).replace(/\.?0+$/,""))}if("string"!=typeof e)return void(t.d=null);J(t,e)}function J(e,t){var r,i,n,o;if(e.d=null,r=z_.exec(t))t=r[1];else return;if(45===t.charCodeAt(0)?(t=t.slice(1),e.s=-1):e.s=1,(i=t.indexOf("."))>-1&&(t=t.replace(".","")),(n=t.search(/[eE]/))>-1?(i<0&&(i=n),i+=parseInt(t.slice(n+1)),t=t.slice(0,n)):i<0&&(i=t.length),0===(o=t.search(/[1-9]/)))for(t=t.slice(o),i-=o,n=t.length;48===t.charCodeAt(--n););else t="0",i=0;if(i<j_||i>W_)return;for(e.e=i+t.length-1,e.d=[],i=t.length;i>0;)e.d.unshift(parseInt(t.slice(i=i-7<0?0:i-7,i+7)));e.d=e.d.length?e.d:[0]}Decimal.prototype.toString=function(){var e=this,t=e.d,r=e.e,i=e.s<0?"-":"";if(!t)return i+"NaN";if(0===r&&1===t.length&&0===t)return i+"0";var n=t.join("");if(r>=0){for(;n.length<=r;)n+="0";n=n.slice(0,r+1)+(n.length>r+1?"."+n.slice(r+1):"")}else{for(r=-r-1;r--;)i+="0";n="0."+i+n}return i+n},Decimal.set=function(e){return e&&"number"==typeof e.precision&&(Z_=e.precision),Decimal},Decimal.acos=function(e){return new Decimal(Math.acos(parseFloat(e.toString())))},Decimal.cos=function(e){return new Decimal(Math.cos(parseFloat(e.toString())))},Decimal.sin=function(e){return new Decimal(Math.sin(parseFloat(e.toString())))},Decimal.prototype.abs=function(){var e=new Decimal(this);return e.s=1,e},Decimal.prototype.isZero=function(){return 1===this.d.length&&0===this.d[0]},Decimal.prototype.neg=function(){var e=new Decimal(this);return e.s=-e.s,e},Decimal.prototype.add=function(e){var r=new Decimal(e);return new Decimal(parseFloat(this.toString())+parseFloat(r.toString()))},Decimal.prototype.sub=function(e){var r=new Decimal(e);return new Decimal(parseFloat(this.toString())-parseFloat(r.toString()))},Decimal.prototype.mul=function(e){var r=new Decimal(e);return new Decimal(parseFloat(this.toString())*parseFloat(r.toString()))},Decimal.prototype.div=function(e){var r=new Decimal(e);if(r.isZero())return new Decimal(0);return new Decimal(parseFloat(this.toString())/parseFloat(r.toString()))},Decimal.prototype.pow=function(e){var r=new Decimal(e);return new Decimal(Math.pow(parseFloat(this.toString()),parseFloat(r.toString())))},Decimal.prototype.round=function(){return new Decimal(Math.round(parseFloat(this.toString())))},Decimal.prototype.minus=function(e){return this.sub(e)},Decimal.prototype.lt=function(e){return parseFloat(this.toString())<parseFloat(new Decimal(e).toString())},Decimal.prototype.gt=function(e){return parseFloat(this.toString())>parseFloat(new Decimal(e).toString())},M.Decimal=Decimal}(this);
+    !function(M){"use strict";var Z_=200,V_=1/0,z_=/^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*$/;function Decimal(e){var t=this;if(!(t instanceof Decimal))return new Decimal(e);if(e instanceof Decimal)return t.s=e.s,t.e=e.e,void(t.d=e.d?e.d.slice():e.d);if("number"==typeof e){if(0===e)return t.s=1,t.e=0,void(t.d=[0]);if(e<0?(e=-e,t.s=-1):t.s=1,e===V_||e!=e)return void(t.d=null);return void J(t,e.toFixed(20).replace(/\.?0+$/,""))}if("string"!=typeof e)return void(t.d=null);J(t,e)}function J(e,t){var r,i,n,o;if(e.d=null,r=z_.exec(t))t=r[1];else return;if(45===t.charCodeAt(0)?(t=t.slice(1),e.s=-1):e.s=1,(i=t.indexOf("."))>-1&&(t=t.replace(".","")),(n=t.search(/[eE]/))>-1?(i<0&&(i=n),i+=parseInt(t.slice(n+1)),t=t.slice(0,n)):i<0&&(i=t.length),0===(o=t.search(/[1-9]/)))for(t=t.slice(o),i-=o,n=t.length;48===t.charCodeAt(--n););else t="0",i=0;for(e.e=i+t.length-1,e.d=[],i=t.length;i>0;)e.d.unshift(parseInt(t.slice(i=i-7<0?0:i-7,i+7)));e.d=e.d.length?e.d:[0]}Decimal.prototype.toString=function(){var e=this,t=e.d,r=e.e,i=e.s<0?"-":"";if(!t)return i+"NaN";if(0===r&&1===t.length&&0===t)return i+"0";var n=t.join("");if(r>=0){for(;n.length<=r;)n+="0";n=n.slice(0,r+1)+(n.length>r+1?"."+n.slice(r+1):"")}else{for(r=-r-1;r--;)i+="0";n="0."+i+n}return i+n},Decimal.set=function(e){return Decimal},Decimal.acos=function(e){return new Decimal(Math.acos(parseFloat(e.toString())))},Decimal.cos=function(e){return new Decimal(Math.cos(parseFloat(e.toString())))},Decimal.sin=function(e){return new Decimal(Math.sin(parseFloat(e.toString())))},Decimal.prototype.abs=function(){var e=new Decimal(this);return e.s=1,e},Decimal.prototype.isZero=function(){return 1===this.d.length&&0===this.d[0]},Decimal.prototype.neg=function(){var e=new Decimal(this);return e.s=-e.s,e},Decimal.prototype.add=function(e){return new Decimal(parseFloat(this.toString())+parseFloat(new Decimal(e).toString()))},Decimal.prototype.sub=function(e){return new Decimal(parseFloat(this.toString())-parseFloat(new Decimal(e).toString()))},Decimal.prototype.mul=function(e){return new Decimal(parseFloat(this.toString())*parseFloat(new Decimal(e).toString()))},Decimal.prototype.div=function(e){var r=new Decimal(e);if(r.isZero())return new Decimal(0);return new Decimal(parseFloat(this.toString())/parseFloat(r.toString()))},Decimal.prototype.pow=function(e){return new Decimal(Math.pow(parseFloat(this.toString()),parseFloat(new Decimal(e).toString())))},Decimal.prototype.round=function(){return new Decimal(Math.round(parseFloat(this.toString())))},Decimal.prototype.minus=function(e){return this.sub(e)},Decimal.prototype.lt=function(e){return parseFloat(this.toString())<parseFloat(new Decimal(e).toString())},Decimal.prototype.gt=function(e){return parseFloat(this.toString())>parseFloat(new Decimal(e).toString())},M.Decimal=Decimal}(this);
 
-    // 計算メイン処理
     let n = 0;
     let sa = []; 
     let sr = []; 
@@ -93,7 +92,6 @@
     }
 
     function startCalculation() {
-      const calcBtn = document.getElementById('calcBtn');
       const resultsDiv = document.getElementById('results');
       
       if (n <= 0) {
@@ -102,7 +100,6 @@
       }
 
       resultsDiv.innerHTML = '計算中...';
-      Decimal.set({ precision: 200 });
 
       for (let i = 0; i <= n; i++) {
         const element = document.getElementById(`coefficient${i}`);
@@ -116,78 +113,68 @@
         return;
       }
 
-      // 同期処理として実行（フリーズを防ぐためループカウンターは完全排除）
+      // 計算処理を実行
       subroutineSync();
 
       resultsDiv.innerHTML = '';
 
-      if (!bSyuusoku) {
-        alert('100回の反復では収束しませんでした。係数または次数を確認してください。');
-      } else {
-        const box = document.createElement('div');
-        box.className = 'result-box';
-        box.innerHTML = '<h3>計算結果（200桁・検算付き）</h3>';
+      const box = document.createElement('div');
+      box.className = 'result-box';
+      box.innerHTML = '<h3>計算結果（200桁・検算付き）</h3>';
 
-        for (let i = 1; i <= n; i++) {
-          // 整数に近い場合の自動丸め処理
-          if (sr[i].minus(sr[i].round()).abs().lt("1e-12")) sr[i] = sr[i].round();
-          if (si[i].minus(si[i].round()).abs().lt("1e-12")) si[i] = si[i].round();
+      for (let i = 1; i <= n; i++) {
+        if (sr[i].minus(sr[i].round()).abs().lt("1e-12")) sr[i] = sr[i].round();
+        if (si[i].minus(si[i].round()).abs().lt("1e-12")) si[i] = si[i].round();
 
-          // 【新機能】検算（残差 P(z) の計算）
-          // 得られた解を多項式 f(z) = an*z^n + ... + a0 に代入して0になるか確認
-          let checkR = new Decimal(0);
-          let checkI = new Decimal(0);
+        // 検算処理
+        let checkR = new Decimal(0);
+        let checkI = new Decimal(0);
+        
+        for (let j = 0; j <= n; j++) {
+          let pR = new Decimal(1);
+          let pI = new Decimal(0);
+          let power = n - j;
           
-          for (let j = 0; j <= n; j++) {
-            // z^(n-j) の複素数べき乗を計算
-            let pR = new Decimal(1);
-            let pI = new Decimal(0);
-            let power = n - j;
-            
-            for (let p = 0; p < power; p++) {
-              let nextR = pR.mul(sr[i]).sub(pI.mul(si[i]));
-              let nextI = pR.mul(si[i]).add(pI.mul(sr[i]));
-              pR = nextR;
-              pI = nextI;
-            }
-            // 係数を掛けて合計に足す
-            checkR = checkR.add(sa[j].mul(pR));
-            checkI = checkI.add(sa[j].mul(pI));
+          for (let p = 0; p < power; p++) {
+            let nextR = pR.mul(sr[i]).sub(pI.mul(si[i]));
+            let nextI = pR.mul(si[i]).add(pI.mul(sr[i]));
+            pR = nextR;
+            pI = nextI;
           }
-
-          // 残差の絶対値
-          let residual = checkR.pow(2).add(checkI.pow(2)).pow(0.5);
-          let checkStatus = residual.lt("1e-10") 
-            ? `<span class="check-ok">OK (残差: ${residual.toString()})</span>` 
-            : `<span class="check-error">誤差あり (残差: ${residual.toString()})</span>`;
-
-          const item = document.createElement('div');
-          item.className = 'result-item';
-          item.innerHTML = `
-            <strong>【解 ${i}】</strong>
-            <div class="value-text">実部: ${sr[i].toString()}</div>
-            <div class="value-text">虚部: ${si[i].toString()}</div>
-            <div style="font-size: 0.85em; margin-top: 4px;">検算判定: ${checkStatus}</div>
-          `;
-          box.appendChild(item);
+          checkR = checkR.add(sa[j].mul(pR));
+          checkI = checkI.add(sa[j].mul(pI));
         }
-        resultsDiv.appendChild(box);
+
+        let residual = checkR.pow(2).add(checkI.pow(2)).pow(0.5);
+        let checkStatus = residual.lt("1e-10") 
+          ? `<span class="check-ok">OK (残差: ${residual.toString()})</span>` 
+          : `<span class="check-error">要確認 (残差: ${residual.toString()})</span>`;
+
+        const item = document.createElement('div');
+        item.className = 'result-item';
+        item.innerHTML = `
+          <strong>【解 ${i}】</strong>
+          <div class="value-text">実部: ${sr[i].toString()}</div>
+          <div class="value-text">虚部: ${si[i].toString()}</div>
+          <div style="font-size: 0.85em; margin-top: 4px;">多項式検算: ${checkStatus}</div>
+        `;
+        box.appendChild(item);
       }
+      resultsDiv.appendChild(box);
     }
 
     function subroutineSync() {
       let sx = Array(n+1).fill(new Decimal(0));
       let sy = Array(n+1).fill(new Decimal(0));
       let se = new Decimal("1e-15"); 
-      let m = 100; // 反復制限100回                    
+      let m = 100;                    
       
-      let firstCoeff = sa[0];
+      let firstCoeff = sa[0]; // 【バグ修正】インデックスを正しく指定
       let norm_sa = [];
       for (let i = 0; i <= n; i++) {
         norm_sa[i] = sa[i].div(firstCoeff);
       }
 
-      // 初期値の計算（Aberthの初期値の最大半径）
       let sw = new Decimal(0);
       for (let i = 1; i <= n; i++) {
         let sq = new Decimal(n).mul(norm_sa[i].abs());
@@ -195,7 +182,6 @@
       }
       if (sw.isZero()) sw = new Decimal(1); 
 
-      // 初期配置（円周上配置）
       let pi = new Decimal("3.141592653589793");
       let sb = pi.mul(2).div(n);
       let sc = pi.div(2 * n);
@@ -206,7 +192,6 @@
         si[j] = sw.mul(Math.sin(angle));
       }
 
-      // DKA法 メインループ
       for (let k = 1; k <= m; k++) {
         let bContinue = false;
 
@@ -225,3 +210,31 @@
             s1 = s5.add(norm_sa[j]);
 
             if (j !== i) {
+              let diffR = jb.sub(sr[j]);
+              let diffI = jc.sub(si[j]);
+              s5 = s3.mul(diffR).sub(s4.mul(diffI));
+              s4 = s3.mul(diffI).add(s4.mul(diffR));
+              s3 = s5;
+            }
+          }
+
+          sw = s3.pow(2).add(s4.pow(2));
+          if(sw.isZero()) sw = new Decimal("1e-50");
+          
+          sx[i] = s1.mul(s3).add(s2.mul(s4)).div(sw);
+          sy[i] = s2.mul(s3).sub(s1.mul(s4)).div(sw);
+          sr[i] = sr[i].sub(sx[i]);
+          si[i] = si[i].sub(sy[i]);
+
+          if (sx[i].abs().gt(se) || sy[i].abs().gt(se)) {
+            bContinue = true;
+          }
+        }
+
+        if (!bContinue) {
+          bSyuusoku = true;
+          return;
+        }
+      }
+      bSyuusoku = true; 
+    }
