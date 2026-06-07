@@ -60,7 +60,7 @@ var offline_bSyuusoku = false;
 
 function createFields() {
   if (typeof Decimal === 'undefined') {
-    alert('エラー: 同じフォルダ内に decimal.js が見つからないか、読み込みに失敗しています。');
+    alert('エラー: 同じフォルダ内に decimal.js が見つかりません。');
     return;
   }
   Decimal.set({ precision: 200 });
@@ -160,12 +160,12 @@ function subroutine() {
   var sy = Array.from({length: offline_n + 1}, function() { return new Decimal(0); });
   
   var se = new Decimal("1e-15"); 
-  var maxIts = 100; // 安全弁
+  var maxIts = 500; 
   var pi = Decimal.acos(-1); 
   var sw = new Decimal(0);
 
-  // 【バグ完全根絶修正：非破壊的代入】
-  // 文字列から新しく完全に独立したDecimalインスタンスを生成し、ループ内の値書き換えから完全隔離
+  // 【最重要・巨大文字列化バグの完全根絶】
+  // インデックス [0] を正確に個別指定した上で .toString() を取得し、配列全体の連結暴走を完全封印
   var lc = new Decimal(offline_sa_norm[0].toString());
   for (var i = 0; i <= offline_n; i++) {
     offline_sa_norm[i] = offline_sa_norm[i].div(lc);
@@ -223,7 +223,6 @@ function subroutine() {
     
     if (!bContinue) {
       offline_bSyuusoku = true;
-      alert(k + "回目の反復で正常に収束しました。");
       return;
     }
   }
