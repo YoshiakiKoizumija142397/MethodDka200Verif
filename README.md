@@ -55,7 +55,6 @@ This project is licensed under the MIT License.
 * **設計・開発責任者:** Yoshiaki Koizumi (小泉 嘉章)
 * **公式GitHubリポジトリ:** [YoshiakiKoizumija142397](https://github.com)
 * **活動拠点:** 日本、茨城県牛久市 (Ushiku city, Ibaraki pref, Japan)
-* **公式サイト:** [https://jimdofree.com](https://jimdofree.com)
 
 > ### 🙏 謝辞 (Acknowledgments)
 > 本要求仕様書および数理設計は、**Microsoft Windows Copilot** と **Google Gemini** によって生成されました。ここに深く感謝申し上げます。
