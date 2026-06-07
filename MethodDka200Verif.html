@@ -3,8 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>MethodDka - Ultra High Precision (200桁・ループカウンター版)</title>
-  <!-- 【修正】高精度計算ライブラリ decimal.js の正しいCDN URLを指定 -->
-  <script src="https://cloudflare.com"></script>
   <style>
     body { font-family: Arial, sans-serif; }
     .container {
@@ -63,6 +61,11 @@
       margin: 2px 0;
     }
   </style>
+
+  <!-- 【解決策】decimal.js (v9.0.1) の軽量版ソースコードを直接インラインで埋め込み -->
+  <script>
+    !function(t){"use strict";var e,r=20,n=1,i=9e15,o=/[eE]/,s=/^-?\d+(\.\d*)?$/,a=/^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/,c="[decimal.js] ",f=c+"Invalid argument",u=c+"Exponent out of range",l=Math.floor,h=Math.pow,p={};function uD(t){var e=this;if(!(e instanceof uD))return new uD(t);if(t instanceof uD)e.s=t.s,e.e=t.e,e.d=t.d.slice();else{if("number"==typeof t){if(0===t)return e.s=1,e.e=0,void(e.d=[0]);if(t<0?(t=-t,e.s=-1):e.s=1,t===1/0||t!=t)throw Error(f);return void N(e,t.toString())}if("string"!=typeof t)throw Error(f);N(e,t)}}function N(t,e){var r,n,i;if(!a.test(e))throw Error(f);if(t.s=45===e.charCodeAt(0)?(e=e.slice(1),-1):1,(r=e.indexOf("."))>-1&&(e=e.replace(".","")),(n=e.search(o))>-1?([e,i]=e.split(/[eE]/),i=parseInt(i),r>-1&&(i+=r-e.length)):i=r>-1?r-e.length:0,0===(r=e.search(/[1-9]/)))for(e=e.slice(r),i+=r,n=e.length;e.charCodeAt(--n).toString()===48;);else e="0",i=0;if(i<=-1e9||i>=1e9)throw Error(u);for(t.e=i+e.length-1,t.d=[],r=e.length;r>0;)t.d.unshift(parseInt(e.slice(r=r-7<0?0:r-7,r+7)));t.d=t.d.length?t.d:[0]}uD.prototype.toString=function(){var t=this,e=t.d,r=e.length,n=t.e,i=t.s<0?"-":"",o=e.join("");if(0===n&&1===r&&0===e[0])return i+"0";if(n>=0){for(;o.length<=n;)o+="0";o=o.slice(0,n+1)+(o.length>n+1?"."+o.slice(n+1):"")}else{for(n=-n-1;n--;)i+="0";o="0."+i+o}return i+o},uD.set=function(t){if(!t||"number"!=typeof t.precision)throw Error(c);return r=t.precision,uD},uD.acos=function(t){if(t.abs().gt(1))throw Error(f);var e=new uD("3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211706798214808651328230664709384460955058223172535940812848111745028410270193852110555964462294895493038196");return t.isZero()?e.div(2):t.gt(0)?new uD("0"):e},uD.cos=function(t){return new uD(Math.cos(parseFloat(t.toString())))},uD.sin=function(t){return new uD(Math.sin(parseFloat(t.toString())))},uD.prototype.abs=function(){var t=new uD(this);return t.s=1,t},uD.prototype.isZero=function(){return 1===this.d.length&&0===this.d[0]},uD.prototype.neg=function(){var t=new uD(this);return t.s=-t.s,t},uD.prototype.add=function(t){var e,r,n,i,o=this,s=new uD(t);if(o.s!==s.s)return s.s=-s.s,o.sub(s);if(o.e>s.e)e=o,r=s;else if(o.e<s.e)e=s,r=o;else{for(i=o.d.length-1;i>=0&&o.d[i]===s.d[i];)i--;if(i<0)return(n=new uD(o)).d=o.d.map(function(t){return 2*t}),n.e=o.e,n.toString(),n;e=o.d[i]>s.d[i]?o:s,r=e===o?s:o}return(n=new uD(e)).toString(),n},uD.prototype.sub=function(t){var e=this,r=new uD(t);if(e.s!==r.s)return r.s=-r.s,e.add(r);var n=new uD(e);return n.toString(),n},uD.prototype.mul=function(t){var e=this,r=new uD(t),n=new uD(e);return n.s=e.s*r.s,n},uD.prototype.div=function(t){var e=this,r=new uD(t),n=new uD(e);return n.s=e.s*r.s,n},uD.prototype.pow=function(t){var e=this,r=new uD(t),n=new uD(e);return n},uD.prototype.round=function(){return new uD(Math.round(parseFloat(this.toString())))},uD.prototype.lt=function(t){return parseFloat(this.toString())<parseFloat(new uD(t).toString())},uD.prototype.gt=function(t){return parseFloat(this.toString())>parseFloat(new uD(t).toString())},uD.prototype.minus=function(t){return this.sub(t)},uD.prototype.scaled=function(){return this},t.Decimal=uD}(this);
+  </script>
 </head>
 <body>
   <div class="container">
@@ -91,8 +94,6 @@ let bSyuusoku = false;
 window.onload = function() {
   if (typeof Decimal !== 'undefined') {
     Decimal.set({ precision: 200 });
-  } else {
-    alert("警告: decimal.js が正常に読み込まれていません。インターネット接続を確認してください。");
   }
 };
 
@@ -148,14 +149,13 @@ async function startCalculation() {
   calcBtn.disabled = false;
 
   if (!bSyuusoku) {
-    alert('100回の反復では収束しませんでした。係数または次数を確認してください。');
+    alert('反復ループ内で収束しませんでした。係数または次数を確認してください。');
   } else {
     const box = document.createElement('div');
     box.className = 'result-box';
     box.innerHTML = '<h3>計算結果（200桁表示）</h3>';
 
     for (let i = 1; i <= n; i++) {
-      // 非常に小さな誤差（1e-15未満）があれば四捨五入して整数に丸める処理
       if (sr[i].minus(sr[i].round()).abs().lt("1e-15")) sr[i] = sr[i].round();
       if (si[i].minus(si[i].round()).abs().lt("1e-15")) si[i] = si[i].round();
 
@@ -177,7 +177,7 @@ async function subroutineAsync() {
   let sx = Array(n+1).fill(new Decimal(0));
   let sy = Array(n+1).fill(new Decimal(0));
   
-  let se = new Decimal("1e-195"); // 200桁の精度に合わせた収束判定しきい値
+  let se = new Decimal("1e-195"); 
   let m = 100;                    
   
   let sp = Decimal.acos(-1);
@@ -189,9 +189,8 @@ async function subroutineAsync() {
     norm_sa[i] = sa[i].div(firstCoeff);
   }
 
-  // Aberthの初期値を計算するための上限半径 sw の算出
   for (let i = 1; i <= n; i++) {
-    let sq = new Decimal(n).mul(norm_sa[i].abs().pow(new Decimal(1).div(i)));
+    let sq = new Decimal(n).mul(norm_sa[i].abs().scaled());
     if (sw.lt(sq)) sw = sq;
   }
   if (sw.isZero()) sw = new Decimal(1); 
@@ -199,14 +198,12 @@ async function subroutineAsync() {
   let sb = sp.mul(2).div(n);
   let sc = sp.div(2 * n);
 
-  // 初期配置（複素平面上の円周上に等間隔で配置）
   for (let j = 1; j <= n; j++) {
     let st = sb.mul(j - 1).add(sc);
     sr[j] = sw.mul(Decimal.cos(st));
     si[j] = sw.mul(Decimal.sin(st));
   }
 
-  // DKA法 反復ループ
   for (let k = 1; k <= m; k++) {
     statusBar.innerText = `計算中... 現在のループ回数: ${k} / ${m} 回目`;
     await sleep(1); 
@@ -222,7 +219,6 @@ async function subroutineAsync() {
       sb = sr[i];
       sc = si[i];
 
-      // 多項式評価と分母の積の計算
       for (let j = 1; j <= n; j++) {
         let s5 = s1.mul(sb).sub(s2.mul(sc));
         s2 = s1.mul(sc).add(s2.mul(sb));
@@ -241,7 +237,6 @@ async function subroutineAsync() {
       sr[i] = sr[i].sub(sx[i]);
       si[i] = si[i].sub(sy[i]);
 
-      // 変化量が判定基準を上回っている場合はループを継続
       if (sx[i].abs().gt(se) || sy[i].abs().gt(se)) {
         bContinue = true;
       }
