@@ -28,16 +28,15 @@
     .button:disabled { background-color: #ced4da; cursor: not-allowed; }
     .button:hover:not(:disabled) { background-color: #004085; }
     
-    /* 【新規】ループ回数表示用のステータスバー */
     .status-bar {
       margin-top: 15px;
       padding: 10px;
-      background-color: #fff3cd;
-      border: 1px solid #ffeeba;
+      background-color: #e2f0d9;
+      border: 1px solid #ccd1c7;
       border-radius: 4px;
-      color: #856404;
+      color: #385723;
       font-weight: bold;
-      display: none; /* 通常時は非表示 */
+      display: none;
     }
     
     .result-box {
@@ -81,10 +80,8 @@
     <button class="button" onclick="createFields()">最高次数を設定</button>
     <div id="coefficients"></div>
     
-    <!-- 【変更】onclickを非同期対応の「startCalculation()」に変更 -->
     <button class="button" id="calcBtn" onclick="startCalculation()">計算開始</button>
     
-    <!-- 【新規】進行状況を表示するエリア -->
     <div id="statusBar" class="status-bar"></div>
     
     <div id="results"></div>
@@ -116,21 +113,19 @@ function createFields() {
   }
 }
 
-// 【新規】画面更新をブロックしないための補助関数（非同期スリープ）
+// 画面更新とCPUの排熱を待つための非同期ウェイト（少し長めの4ミリ秒に調整）
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// 【新規】計算開始のトリガー関数（async化して非同期実行）
 async function startCalculation() {
   const calcBtn = document.getElementById('calcBtn');
   const statusBar = document.getElementById('statusBar');
   const resultsDiv = document.getElementById('results');
   
-  // UIの初期化
   calcBtn.disabled = true;
   resultsDiv.innerHTML = '';
   statusBar.style.display = 'block';
-  statusBar.innerText = '初期値を設定中...';
-  await sleep(10); // 描画を確定させるためのわずかな隙
+  statusBar.innerText = '初期化中...';
+  await sleep(10); 
 
   Decimal.set({ precision: 200 });
 
@@ -145,15 +140,13 @@ async function startCalculation() {
     return;
   }
 
-  // 非同期版のサブルーチンを呼び出し、完了を待つ
   await subroutineAsync();
 
-  // 結果の表示
   statusBar.style.display = 'none';
   calcBtn.disabled = false;
 
   if (!bSyuusoku) {
-    alert('収束しませんでした。反復回数を増やすか、係数を見直してください。');
+    alert('200回の反復では収束しませんでした。係数または次数を確認してください。');
   } else {
     const box = document.createElement('div');
     box.className = 'result-box';
@@ -184,14 +177,15 @@ async function startCalculation() {
   }
 }
 
-// 【大幅改良】DKA法による全根同時計算サブーチン（非同期版）
 async function subroutineAsync() {
   const statusBar = document.getElementById('statusBar');
   let sx = Array(n+1).fill(new Decimal(0));
   let sy = Array(n+1).fill(new Decimal(0));
   
   let se = new Decimal("1e-150"); 
-  let m = 1000; // 最大1000回
+  
+  // 【修正】最大ループ回数を200回に完全制限
+  let m = 200; 
   
   let sp = Decimal.acos(-1);
   let sw = new Decimal(0);
@@ -222,12 +216,11 @@ async function subroutineAsync() {
 
   // DKA反復ループ
   for (let k = 1; k <= m; k++) {
-    // 【新規】画面に現在のループ回数をリアルタイム表示
-    // 毎ループだと表示処理自体が重くなるため、10回に1回画面を更新（リフレッシュ）
-    if (k === 1 || k % 10 === 0 || k === m) {
-      statusBar.innerText = `計算中... 現在のループ回数: ${k} / ${m} 回目`;
-      await sleep(1); // 1ミリ秒だけ処理をブラウザに譲り、画面を書き換えさせる（フリーズ防止）
-    }
+    // 【修正】1回ループするごとに正確にカウントを表示し、CPUを休ませる（await sleep）
+    statusBar.innerText = `計算中... 現在のループ回数: ${k} / ${m} 回目`;
+    
+    // 1回の超高精度計算ごとに4ミリ秒の休憩を挟むことで、第8世代CPUのファンが暴走するのを防ぎます
+    await sleep(4); 
 
     let bContinue = false;
 
@@ -265,7 +258,7 @@ async function subroutineAsync() {
 
     if (!bContinue) {
       bSyuusoku = true;
-      alert(`${k} 回目のループで200桁の精度に収束しました！`);
+      alert(`${k} 回目のループで無事に収束しました！`);
       return;
     }
   }
