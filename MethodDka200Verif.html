@@ -25,7 +25,21 @@
       border-radius: 4px;
       cursor: pointer;
     }
-    .button:hover { background-color: #004085; }
+    .button:disabled { background-color: #ced4da; cursor: not-allowed; }
+    .button:hover:not(:disabled) { background-color: #004085; }
+    
+    /* 【新規】ループ回数表示用のステータスバー */
+    .status-bar {
+      margin-top: 15px;
+      padding: 10px;
+      background-color: #fff3cd;
+      border: 1px solid #ffeeba;
+      border-radius: 4px;
+      color: #856404;
+      font-weight: bold;
+      display: none; /* 通常時は非表示 */
+    }
+    
     .result-box {
       margin-top: 20px;
       padding: 15px;
@@ -66,7 +80,13 @@
     </div>
     <button class="button" onclick="createFields()">最高次数を設定</button>
     <div id="coefficients"></div>
-    <button class="button" onclick="calculate()">計算開始</button>
+    
+    <!-- 【変更】onclickを非同期対応の「startCalculation()」に変更 -->
+    <button class="button" id="calcBtn" onclick="startCalculation()">計算開始</button>
+    
+    <!-- 【新規】進行状況を表示するエリア -->
+    <div id="statusBar" class="status-bar"></div>
+    
     <div id="results"></div>
   </div>
 
@@ -96,23 +116,41 @@ function createFields() {
   }
 }
 
-function calculate() {
+// 【新規】画面更新をブロックしないための補助関数（非同期スリープ）
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// 【新規】計算開始のトリガー関数（async化して非同期実行）
+async function startCalculation() {
+  const calcBtn = document.getElementById('calcBtn');
+  const statusBar = document.getElementById('statusBar');
+  const resultsDiv = document.getElementById('results');
+  
+  // UIの初期化
+  calcBtn.disabled = true;
+  resultsDiv.innerHTML = '';
+  statusBar.style.display = 'block';
+  statusBar.innerText = '初期値を設定中...';
+  await sleep(10); // 描画を確定させるためのわずかな隙
+
   Decimal.set({ precision: 200 });
 
   for (let i = 0; i <= n; i++) {
     const coefficient = document.getElementById(`coefficient${i}`).value;
     sa[i] = new Decimal(coefficient || "0");
   }
-  // 【バグ修正】sa -> sa[0] に修正
   if (n === 0 || sa[0].isZero()) {
     alert('最高次数の係数を正しく設定してください（0は不可）。');
+    calcBtn.disabled = false;
+    statusBar.style.display = 'none';
     return;
   }
 
-  subroutine();
+  // 非同期版のサブルーチンを呼び出し、完了を待つ
+  await subroutineAsync();
 
-  const resultsDiv = document.getElementById('results');
-  resultsDiv.innerHTML = '';
+  // 結果の表示
+  statusBar.style.display = 'none';
+  calcBtn.disabled = false;
 
   if (!bSyuusoku) {
     alert('収束しませんでした。反復回数を増やすか、係数を見直してください。');
@@ -124,12 +162,6 @@ function calculate() {
     for (let i = 1; i <= n; i++) {
       const check = verifyRoot(sr[i], si[i]);
 
-      // 200桁の浮動小数点演算による極小の丸め誤差を考慮し、
-      // 画面表示時に整数に極めて近い場合は綺麗に見せる処理を追加
-      let resR_str = sr[i].toFixed(10);
-      let resI_str = si[i].toFixed(10);
-      
-      // もしほぼ整数なら整数表記にする
       if (sr[i].minus(sr[i].round()).abs().lt("1e-15")) sr[i] = sr[i].round();
       if (si[i].minus(si[i].round()).abs().lt("1e-15")) si[i] = si[i].round();
 
@@ -152,19 +184,20 @@ function calculate() {
   }
 }
 
-function subroutine() {
+// 【大幅改良】DKA法による全根同時計算サブーチン（非同期版）
+async function subroutineAsync() {
+  const statusBar = document.getElementById('statusBar');
   let sx = Array(n+1).fill(new Decimal(0));
   let sy = Array(n+1).fill(new Decimal(0));
   
   let se = new Decimal("1e-150"); 
-  let m = 1000;                    
+  let m = 1000; // 最大1000回
   
   let sp = Decimal.acos(-1);
   let sw = new Decimal(0);
 
   let norm_sa = [];
   for (let i = 0; i <= n; i++) {
-    // 【バグ修正】sa -> sa[0] に修正
     norm_sa[i] = sa[i].div(sa[0]);
   }
 
@@ -177,7 +210,6 @@ function subroutine() {
   let sb = sp.mul(2).div(n);
   let sc = sp.div(2 * n);
 
-  // 【改良】高校入試問題特有の対称性トラップを避けるため、初期値にわずかなランダム性を付与
   for (let j = 1; j <= n; j++) {
     let st = sb.mul(j - 1).add(sc);
     let noiseR = new Decimal(1 + (Math.random() - 0.5) * 0.01);
@@ -188,7 +220,15 @@ function subroutine() {
     si[j] = sw.mul(noiseR).mul(Decimal.sin(finalSt));
   }
 
+  // DKA反復ループ
   for (let k = 1; k <= m; k++) {
+    // 【新規】画面に現在のループ回数をリアルタイム表示
+    // 毎ループだと表示処理自体が重くなるため、10回に1回画面を更新（リフレッシュ）
+    if (k === 1 || k % 10 === 0 || k === m) {
+      statusBar.innerText = `計算中... 現在のループ回数: ${k} / ${m} 回目`;
+      await sleep(1); // 1ミリ秒だけ処理をブラウザに譲り、画面を書き換えさせる（フリーズ防止）
+    }
+
     let bContinue = false;
 
     for (let i = 1; i <= n; i++) {
@@ -225,7 +265,7 @@ function subroutine() {
 
     if (!bContinue) {
       bSyuusoku = true;
-      alert('200桁の精度で収束しました！');
+      alert(`${k} 回目のループで200桁の精度に収束しました！`);
       return;
     }
   }
@@ -234,7 +274,6 @@ function subroutine() {
 }
 
 function verifyRoot(rootR, rootI) {
-  // 【バグ修正】sa -> sa[0] に修正
   let resR = new Decimal(sa[0]);
   let resI = new Decimal(0);
 
