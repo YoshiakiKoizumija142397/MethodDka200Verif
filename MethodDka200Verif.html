@@ -113,6 +113,7 @@ function calculate() {
     offline_sa_norm[i] = new Decimal(offline_sa[i]);
   }
 
+  // 【REQ-003】Durand-Kerner法コアルーチンの実行
   subroutine();
 
   var resultsDiv = document.getElementById('results');
@@ -123,7 +124,7 @@ function calculate() {
     return;
   }
 
-  // 【検算フリーズバグの完全根絶】境界エラーを起こさない堅牢な複素数多項式代入処理（Horner法）
+  // 複素数拡張Horner法による精密検算
   for (var i = 1; i <= offline_n; i++) {
     var check_r = new Decimal(offline_sa[0]);
     var check_i = new Decimal(0);
@@ -131,8 +132,7 @@ function calculate() {
     for (var j = 1; j <= offline_n; j++) {
       var next_r = check_r.mul(offline_sr[i]).sub(check_i.mul(offline_si[i])).add(offline_sa[j]);
       var next_i = check_r.mul(offline_si[i]).add(check_i.mul(offline_sr[i]));
-      check_r = next_r; 
-      check_i = next_i;
+      check_r = next_r; check_i = next_i;
     }
 
     var error_abs = check_r.pow(2).add(check_i.pow(2)).sqrt();
@@ -160,11 +160,11 @@ function subroutine() {
   var sy = Array.from({length: offline_n + 1}, function() { return new Decimal(0); });
   
   var se = new Decimal("1e-15"); 
-  var maxIts = 100; 
+  var maxIts = 100; // 安全弁
   var pi = Decimal.acos(-1); 
   var sw = new Decimal(0);
 
-  // モニック化処理のバグを完全根絶
+  // 【最重要・クラッシュバグの完全修正】配列の先頭データ sa_norm[0] をピンポイントで指定してlcを初期化
   var lc = new Decimal(offline_sa_norm[0]);
   for (var i = 0; i <= offline_n; i++) {
     offline_sa_norm[i] = offline_sa_norm[i].div(lc);
