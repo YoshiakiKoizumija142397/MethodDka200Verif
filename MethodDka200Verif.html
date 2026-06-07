@@ -7,7 +7,7 @@
   <!-- 【REQ-001】CORS制限回避のため、同階層のdecimal.jsをロード -->
   <script src="./decimal.js"></script>
   <style>
-    :root { var(--primary): #0d47a1; var(--primary-hover): #0a3578; var(--bg): #f0f2f5; var(--surface): #ffffff; var(--text): #333333; }
+    :root { --primary: #0d47a1; --primary-hover: #0a3578; --bg: #f0f2f5; --surface: #ffffff; --text: #333333; }
     body { font-family: sans-serif; background-color: #f0f2f5; color: #333; padding: 20px; line-height: 1.6; }
     .container { max-width: 750px; margin: 40px auto; padding: 30px; background-color: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
     h1 { font-size: 24px; color: #0d47a1; border-bottom: 2px solid #90caf9; padding-bottom: 10px; }
@@ -52,9 +52,6 @@
   </main>
 
 <script>
-/**
- * グローバル変数の安全設計（varによるスコープ完全防護）
- */
 var offline_n = 0;
 var offline_sa = [];      
 var offline_sa_norm = []; 
@@ -62,15 +59,11 @@ var offline_sr = [];
 var offline_si = [];      
 var offline_bSyuusoku = false;
 
-/**
- * 【REQ-002】動的UI自動生成
- */
 function createFields() {
   if (typeof Decimal === 'undefined') {
-    alert('エラー: 同じフォルダ内に decimal.js が見つからないか、読み込みに失敗しています。');
+    alert('エラー: 同じフォルダ内に decimal.js が見つかりません。');
     return;
   }
-
   Decimal.set({ precision: 200 });
 
   var maxDegreeInput = document.getElementById('maxDegree').value;
@@ -100,9 +93,6 @@ function createFields() {
   document.getElementById('results').innerHTML = '';
 }
 
-/**
- * 【REQ-004】コントロールメインプロセッサ（解析 -> 探索 -> 検算）
- */
 function calculate() {
   offline_sa = [];
   offline_sr = new Array(offline_n + 1);
@@ -114,7 +104,6 @@ function calculate() {
     catch(e) { alert((offline_n - i) + '次の係数の入力形式が正しくありません。'); return; }
   }
 
-  // 【バグ完全修正点】配列 sa 全体ではなく、先頭要素「offline_sa[0]」に対して適切に .isZero() を判定
   if (offline_sa[0].isZero()) { 
     alert('最高次の係数 (a_n) に 0 は指定できません。'); 
     return; 
@@ -123,18 +112,16 @@ function calculate() {
   offline_sa_norm = [];
   for(var i = 0; i <= offline_n; i++) offline_sa_norm[i] = new Decimal(offline_sa[i]);
 
-  // 【REQ-003】Durand-Kerner法コアルーチンの実行
   subroutine();
 
   var resultsDiv = document.getElementById('results');
   resultsDiv.innerHTML = '';
 
   if (!offline_bSyuusoku) {
-    alert('指定された反復回数（800回）以内で収束条件（1e-195）を満たせませんでした。');
+    alert('指定された反復回数（800回）以内で収束条件を満たせませんでした。');
     return;
   }
 
-  // 複素数拡張Horner法による精密検算
   for (var i = 1; i <= offline_n; i++) {
     var check_r = new Decimal(offline_sa[0]);
     var check_i = new Decimal(0);
@@ -165,14 +152,12 @@ function calculate() {
   }
 }
 
-/**
- * Optimized Durand-Kerner (DK法) 200桁安定演算ロジック
- */
 function subroutine() {
   var sx = Array.from({length: offline_n + 1}, function() { return new Decimal(0); });
   var sy = Array.from({length: offline_n + 1}, function() { return new Decimal(0); });
-  var se = new Decimal("1e-195"), maxIts = 800, pi = Decimal.acos(-1), sw = new Decimal(0);
+  var se = new Decimal("1e-15"), maxIts = 800, pi = Decimal.acos(-1), sw = new Decimal(0);
 
+  // 【致命的フリーズバグ修正】配列そのものではなく、先頭要素 offline_sa_norm[0] をlcに指定
   var lc = offline_sa_norm[0];
   for (var i = 0; i <= offline_n; i++) offline_sa_norm[i] = offline_sa_norm[i].div(lc);
 
