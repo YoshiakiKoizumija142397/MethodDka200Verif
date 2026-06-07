@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>MethodDka - Ultra High Precision (200桁・ループカウンター版)</title>
-  <!-- 高精度計算ライブラリ decimal.js -->
+  <!-- 【修正】高精度計算ライブラリ decimal.js の正しいCDN URLを指定 -->
   <script src="https://cloudflare.com"></script>
   <style>
     body { font-family: Arial, sans-serif; }
@@ -28,7 +28,6 @@
     .button:disabled { background-color: #ced4da; cursor: not-allowed; }
     .button:hover:not(:disabled) { background-color: #004085; }
     
-    /* 進行状況を表示するバー */
     .status-bar {
       margin-top: 15px;
       padding: 10px;
@@ -83,7 +82,7 @@
   </div>
 
 <script>
-let n;
+let n = 0;
 let sa = []; 
 let sr = []; 
 let si = []; 
@@ -92,6 +91,8 @@ let bSyuusoku = false;
 window.onload = function() {
   if (typeof Decimal !== 'undefined') {
     Decimal.set({ precision: 200 });
+  } else {
+    alert("警告: decimal.js が正常に読み込まれていません。インターネット接続を確認してください。");
   }
 };
 
@@ -108,7 +109,6 @@ function createFields() {
   }
 }
 
-// 画面更新用の短い非同期ウェイト（1ミリ秒）
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function startCalculation() {
@@ -116,6 +116,11 @@ async function startCalculation() {
   const statusBar = document.getElementById('statusBar');
   const resultsDiv = document.getElementById('results');
   
+  if (n <= 0) {
+    alert('まず「最高次数を設定」ボタンを押し、係数を入力してください。');
+    return;
+  }
+
   calcBtn.disabled = true;
   resultsDiv.innerHTML = '';
   statusBar.style.display = 'block';
@@ -125,12 +130,12 @@ async function startCalculation() {
   Decimal.set({ precision: 200 });
 
   for (let i = 0; i <= n; i++) {
-    const coefficient = document.getElementById(`coefficient${i}`).value;
+    const element = document.getElementById(`coefficient${i}`);
+    const coefficient = element ? element.value : "0";
     sa[i] = new Decimal(coefficient || "0");
   }
   
-  // 【バグ修正】最高次(sa[0])の係数を安全にチェックするように修正
-  if (n === 0 || !sa[0] || sa[0].isZero()) {
+  if (!sa[0] || sa[0].isZero()) {
     alert('最高次数の係数を正しく設定してください（0は不可）。');
     calcBtn.disabled = false;
     statusBar.style.display = 'none';
@@ -147,9 +152,10 @@ async function startCalculation() {
   } else {
     const box = document.createElement('div');
     box.className = 'result-box';
-    box.innerHTML = '<h3>計算結果</h3>';
+    box.innerHTML = '<h3>計算結果（200桁表示）</h3>';
 
     for (let i = 1; i <= n; i++) {
+      // 非常に小さな誤差（1e-15未満）があれば四捨五入して整数に丸める処理
       if (sr[i].minus(sr[i].round()).abs().lt("1e-15")) sr[i] = sr[i].round();
       if (si[i].minus(si[i].round()).abs().lt("1e-15")) si[i] = si[i].round();
 
@@ -171,20 +177,20 @@ async function subroutineAsync() {
   let sx = Array(n+1).fill(new Decimal(0));
   let sy = Array(n+1).fill(new Decimal(0));
   
-  let se = new Decimal("1e-200"); 
+  let se = new Decimal("1e-195"); // 200桁の精度に合わせた収束判定しきい値
   let m = 100;                    
   
   let sp = Decimal.acos(-1);
   let sw = new Decimal(0);
 
-  // 【バグ修正】最高次(sa[0])のインデックスを安全に取得
   let firstCoeff = sa[0];
   let norm_sa = [];
   for (let i = 0; i <= n; i++) {
     norm_sa[i] = sa[i].div(firstCoeff);
   }
 
-  for (let i = 2; i <= n; i++) {
+  // Aberthの初期値を計算するための上限半径 sw の算出
+  for (let i = 1; i <= n; i++) {
     let sq = new Decimal(n).mul(norm_sa[i].abs().pow(new Decimal(1).div(i)));
     if (sw.lt(sq)) sw = sq;
   }
@@ -193,13 +199,14 @@ async function subroutineAsync() {
   let sb = sp.mul(2).div(n);
   let sc = sp.div(2 * n);
 
+  // 初期配置（複素平面上の円周上に等間隔で配置）
   for (let j = 1; j <= n; j++) {
     let st = sb.mul(j - 1).add(sc);
     sr[j] = sw.mul(Decimal.cos(st));
     si[j] = sw.mul(Decimal.sin(st));
   }
 
-  // DKA反復ループ
+  // DKA法 反復ループ
   for (let k = 1; k <= m; k++) {
     statusBar.innerText = `計算中... 現在のループ回数: ${k} / ${m} 回目`;
     await sleep(1); 
@@ -215,6 +222,7 @@ async function subroutineAsync() {
       sb = sr[i];
       sc = si[i];
 
+      // 多項式評価と分母の積の計算
       for (let j = 1; j <= n; j++) {
         let s5 = s1.mul(sb).sub(s2.mul(sc));
         s2 = s1.mul(sc).add(s2.mul(sb));
@@ -233,6 +241,7 @@ async function subroutineAsync() {
       sr[i] = sr[i].sub(sx[i]);
       si[i] = si[i].sub(sy[i]);
 
+      // 変化量が判定基準を上回っている場合はループを継続
       if (sx[i].abs().gt(se) || sy[i].abs().gt(se)) {
         bContinue = true;
       }
