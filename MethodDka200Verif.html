@@ -7,7 +7,6 @@
   <!-- 【REQ-001】CORS制限回避のため、同階層のdecimal.jsをロード -->
   <script src="./decimal.js"></script>
   <style>
-    :root { --primary: #0d47a1; --primary-hover: #0a3578; --bg: #f0f2f5; --surface: #ffffff; --text: #333333; }
     body { font-family: sans-serif; background-color: #f0f2f5; color: #333; padding: 20px; line-height: 1.6; }
     .container { max-width: 750px; margin: 40px auto; padding: 30px; background-color: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
     h1 { font-size: 24px; color: #0d47a1; border-bottom: 2px solid #90caf9; padding-bottom: 10px; }
@@ -118,7 +117,7 @@ function calculate() {
   resultsDiv.innerHTML = '';
 
   if (!offline_bSyuusoku) {
-    alert('指定された反復回数（800回）以内で収束条件を満たせませんでした。');
+    alert('収束条件を満たせませんでした。計算を安全に停止します。');
     return;
   }
 
@@ -155,11 +154,18 @@ function calculate() {
 function subroutine() {
   var sx = Array.from({length: offline_n + 1}, function() { return new Decimal(0); });
   var sy = Array.from({length: offline_n + 1}, function() { return new Decimal(0); });
-  var se = new Decimal("1e-15"), maxIts = 800, pi = Decimal.acos(-1), sw = new Decimal(0);
+  
+  // 第8世代インテル環境向けのセーフティバランスチューニング
+  var se = new Decimal("1e-15"); 
+  var maxIts = 100; // フリーズを完璧に防ぐため、ループ上限を安全な100回に絞り込み
+  var pi = Decimal.acos(-1); 
+  var sw = new Decimal(0);
 
-  // 【致命的フリーズバグ修正】配列そのものではなく、先頭要素 offline_sa_norm[0] をlcに指定
-  var lc = offline_sa_norm[0];
-  for (var i = 0; i <= offline_n; i++) offline_sa_norm[i] = offline_sa_norm[i].div(lc);
+  // インデックス指定ミスを完全に根絶 [0] を明記
+  var lc = new Decimal(offline_sa_norm[0]);
+  for (var i = 0; i <= offline_n; i++) {
+    offline_sa_norm[i] = offline_sa_norm[i].div(lc);
+  }
 
   for (var i = 1; i <= offline_n; i++) {
     var sq = new Decimal(offline_n).mul(offline_sa_norm[i].abs().pow(new Decimal(1).div(new Decimal(i))));
@@ -167,12 +173,15 @@ function subroutine() {
   }
   if (sw.isZero()) sw = new Decimal(1);
 
-  var sb = pi.mul(2).div(new Decimal(offline_n)), sc = pi.div(new Decimal(2 * offline_n));
+  var sb = pi.mul(2).div(new Decimal(offline_n));
+  var sc = pi.div(new Decimal(2 * offline_n));
   for (var j = 1; j <= offline_n; j++) {
     var st = sb.mul(new Decimal(j - 1)).add(sc);
-    offline_sr[j] = sw.mul(Decimal.cos(st)); offline_si[j] = sw.mul(Decimal.sin(st));
+    offline_sr[j] = sw.mul(Decimal.cos(st)); 
+    offline_si[j] = sw.mul(Decimal.sin(st));
   }
 
+  // 補正メインループ
   for (var k = 1; k <= maxIts; k++) {
     var bContinue = false;
     for (var i = 1; i <= offline_n; i++) {
@@ -181,27 +190,44 @@ function subroutine() {
 
       for (var j = 1; j <= offline_n; j++) {
         var s5 = s1.mul(bi).sub(s2.mul(ci));
-        s2 = s1.mul(ci).add(s2.mul(bi)); s1 = s5.add(offline_sa_norm[j]);
+        s2 = s1.mul(ci).add(s2.mul(bi)); 
+        s1 = s5.add(offline_sa_norm[j]);
+        
         if (j !== i) {
-          var dx = bi.sub(offline_sr[j]), dy = ci.sub(offline_si[j]);
-          s5 = s3.mul(dx).sub(s4.mul(dy)); s4 = s3.mul(dy).add(s4.mul(dx)); s3 = s5;
+          var dx = bi.sub(offline_sr[j]); 
+          var dy = ci.sub(offline_si[j]);
+          s5 = s3.mul(dx).sub(s4.mul(dy)); 
+          s4 = s3.mul(dy).add(s4.mul(dx)); 
+          s3 = s5;
         }
       }
 
-      var den;
-      if (s3.abs().gte(s4.abs())) {
-        var r = s4.div(s3); den = s3.add(s4.mul(r));
-        sx[i] = s1.add(s2.mul(r)).div(den); sy[i] = s2.sub(s1.mul(r)).div(den);
-      } else {
-        var r = s3.div(s4); den = s3.mul(r).add(s4);
-        sx[i] = s1.mul(r).add(s2).div(den); sy[i] = s2.mul(r).sub(s1).div(den);
+      var den = s3.pow(2).add(s4.pow(2));
+      // 万が一分母がゼロになった場合の異常値安全弁を搭載
+      if (den.isZero()) {
+        den = new Decimal("1e-50");
       }
 
-      offline_sr[i] = offline_sr[i].sub(sx[i]); offline_si[i] = offline_si[i].sub(sy[i]);
-      if (sx[i].abs().gt(se) || sy[i].abs().gt(se)) bContinue = true;
+      sx[i] = s1.mul(s3).add(s2.mul(s4)).div(den);
+      sy[i] = s2.mul(s3).sub(s1.mul(s4)).div(den);
+
+      offline_sr[i] = offline_sr[i].sub(sx[i]); 
+      offline_si[i] = offline_si[i].sub(sy[i]);
+      
+      if (sx[i].abs().gt(se) || sy[i].abs().gt(se)) {
+        bContinue = true;
+      }
     }
-    if (!bContinue) { offline_bSyuusoku = true; return; }
+    
+    // すべての解が正常に収束したら早期に安全脱出
+    if (!bContinue) {
+      offline_bSyuusoku = true;
+      alert(k + "回目の反復で正常に収束しました。");
+      return;
+    }
   }
+  
+  // 100回に達しても収束しなかった場合、フリーズさせずに「未収束」として安全に処理を返す
   offline_bSyuusoku = false;
 }
 </script>
