@@ -1,240 +1,271 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>MethodDka - Ultra High Precision (200桁・検算機能版)</title>
+  <title>MethodDka - 200桁超高精度版（検算機能付き）</title>
+  <!-- 高精度計算ライブラリ decimal.js -->
+  <script src="https://cloudflare.com"></script>
   <style>
-    body { font-family: Arial, sans-serif; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 20px; }
     .container {
-      max-width: 650px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #f9f9f9;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 750px;
+      margin: 40px auto;
+      padding: 30px;
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     }
-    .input-field { margin-bottom: 10px; }
-    .input-field input { width: 100%; padding: 8px; box-sizing: border-box; }
+    h1 { font-size: 24px; color: #1b5e20; margin-bottom: 20px; border-bottom: 2px solid #a5d6a7; padding-bottom: 10px; }
+    .input-field { margin-bottom: 15px; }
+    .input-field label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+    .input-field input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+    .button-group { margin-top: 15px; margin-bottom: 25px; }
     .button {
       padding: 10px 20px;
-      background-color: #0056b3;
+      background-color: #2e7d32;
       color: white;
       border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .button:disabled { background-color: #ced4da; cursor: not-allowed; }
-    .button:hover:not(:disabled) { background-color: #004085; }
-    
-    .result-box {
-      margin-top: 20px;
-      padding: 15px;
-      background-color: #e9ecef;
       border-radius: 6px;
-      border-left: 5px solid #28a745;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      transition: background-color 0.2s;
     }
-    .result-item {
-      margin-bottom: 15px;
-      padding-bottom: 10px;
-      border-bottom: 1px dashed #ced4da;
+    .button:hover { background-color: #1b5e20; }
+    .button.secondary { background-color: #546e7a; margin-right: 10px; }
+    .button.secondary:hover { background-color: #37474f; }
+    
+    .result-card {
+      margin-top: 20px;
+      padding: 20px;
+      background-color: #f1f8e9;
+      border-left: 5px solid #81c784;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
     }
-    .result-item:last-child { border-bottom: none; }
-    .value-text {
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 0.9em;
-      word-break: break-all;
-      background-color: #fff;
-      padding: 4px;
-      border: 1px solid #dee2e6;
+    .result-title { font-size: 18px; font-weight: bold; color: #2e7d32; margin-bottom: 10px; border-bottom: 1px dashed #c8e6c9; padding-bottom: 5px; }
+    .result-value { font-family: 'Courier New', Courier, monospace; word-break: break-all; background-color: #fff; padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 13px; margin-top: 5px; }
+    
+    .validation-box {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #fff3e0;
+      border: 1px solid #ffe0b2;
       border-radius: 4px;
-      margin: 2px 0;
+      font-size: 14px;
     }
-    .check-ok { color: #28a745; font-weight: bold; }
-    .check-error { color: #dc3545; font-weight: bold; }
+    .validation-title { font-weight: bold; color: #e65100; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>MethodDka (200桁・検算機能版)</h1>
+    <h1>MethodDka (200桁高精度多項式解法・検算機能搭載)</h1>
     <div class="input-field">
-      <label for="maxDegree">最高次数:</label>
-      <input type="number" id="maxDegree" value="2" />
+      <label for="maxDegree">最高次数 (n):</label>
+      <input type="number" id="maxDegree" value="3" min="1" />
     </div>
-    <button class="button" onclick="createFields()">最高次数を設定</button>
+    <div class="button-group">
+      <button class="button secondary" onclick="createFields()">係数入力欄を生成</button>
+    </div>
     <div id="coefficients"></div>
-    
-    <button class="button" id="calcBtn" onclick="startCalculation()">計算開始</button>
-    
+    <div id="calc-button-container" style="display:none;">
+      <button class="button" onclick="calculate()">計算＆検算を開始</button>
+    </div>
     <div id="results"></div>
   </div>
 
-  <!-- decimal.js (製品フル版を安全に内蔵) -->
-  <script>
-    !function(M){"use strict";var Z_=200,V_=1/0,z_=/^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*$/;function Decimal(e){var t=this;if(!(t instanceof Decimal))return new Decimal(e);if(e instanceof Decimal)return t.s=e.s,t.e=e.e,void(t.d=e.d?e.d.slice():e.d);if("number"==typeof e){if(0===e)return t.s=1,t.e=0,void(t.d=[0]);if(e<0?(e=-e,t.s=-1):t.s=1,e===V_||e!=e)return void(t.d=null);return void J(t,e.toFixed(20).replace(/\.?0+$/,""))}if("string"!=typeof e)return void(t.d=null);J(t,e)}function J(e,t){var r,i,n,o;if(e.d=null,r=z_.exec(t))t=r[1];else return;if(45===t.charCodeAt(0)?(t=t.slice(1),e.s=-1):e.s=1,(i=t.indexOf("."))>-1&&(t=t.replace(".","")),(n=t.search(/[eE]/))>-1?(i<0&&(i=n),i+=parseInt(t.slice(n+1)),t=t.slice(0,n)):i<0&&(i=t.length),0===(o=t.search(/[1-9]/)))for(t=t.slice(o),i-=o,n=t.length;48===t.charCodeAt(--n););else t="0",i=0;for(e.e=i+t.length-1,e.d=[],i=t.length;i>0;)e.d.unshift(parseInt(t.slice(i=i-7<0?0:i-7,i+7)));e.d=e.d.length?e.d:[0]}Decimal.prototype.toString=function(){var e=this,t=e.d,r=e.e,i=e.s<0?"-":"";if(!t)return i+"NaN";if(0===r&&1===t.length&&0===t)return i+"0";var n=t.join("");if(r>=0){for(;n.length<=r;)n+="0";n=n.slice(0,r+1)+(n.length>r+1?"."+n.slice(r+1):"")}else{for(r=-r-1;r--;)i+="0";n="0."+i+n}return i+n},Decimal.set=function(e){return Decimal},Decimal.acos=function(e){return new Decimal(Math.acos(parseFloat(e.toString())))},Decimal.cos=function(e){return new Decimal(Math.cos(parseFloat(e.toString())))},Decimal.sin=function(e){return new Decimal(Math.sin(parseFloat(e.toString())))},Decimal.prototype.abs=function(){var e=new Decimal(this);return e.s=1,e},Decimal.prototype.isZero=function(){return 1===this.d.length&&0===this.d[0]},Decimal.prototype.neg=function(){var e=new Decimal(this);return e.s=-e.s,e},Decimal.prototype.add=function(e){return new Decimal(parseFloat(this.toString())+parseFloat(new Decimal(e).toString()))},Decimal.prototype.sub=function(e){return new Decimal(parseFloat(this.toString())-parseFloat(new Decimal(e).toString()))},Decimal.prototype.mul=function(e){return new Decimal(parseFloat(this.toString())*parseFloat(new Decimal(e).toString()))},Decimal.prototype.div=function(e){var r=new Decimal(e);if(r.isZero())return new Decimal(0);return new Decimal(parseFloat(this.toString())/parseFloat(r.toString()))},Decimal.prototype.pow=function(e){return new Decimal(Math.pow(parseFloat(this.toString()),parseFloat(new Decimal(e).toString())))},Decimal.prototype.round=function(){return new Decimal(Math.round(parseFloat(this.toString())))},Decimal.prototype.minus=function(e){return this.sub(e)},Decimal.prototype.lt=function(e){return parseFloat(this.toString())<parseFloat(new Decimal(e).toString())},Decimal.prototype.gt=function(e){return parseFloat(this.toString())>parseFloat(new Decimal(e).toString())},M.Decimal=Decimal}(this);
+<script>
+// 計算精度を200桁に設定
+Decimal.set({ precision: 200 });
 
-    let n = 0;
-    let sa = []; 
-    let sr = []; 
-    let si = []; 
-    let bSyuusoku = false;
+let n = 0;
+let sa = [];      // ユーザーが入力した元の係数配列（正規化前）
+let sa_norm = []; // 正規化した係数配列（計算用）
+let sr = [];      // 解の実部配列
+let si = [];      // 解の虚部配列
+let bSyuusoku = false;
 
-    function createFields() {
-      const maxDegree = document.getElementById('maxDegree').value;
-      n = parseInt(maxDegree);
-      const coefficientsDiv = document.getElementById('coefficients');
-      coefficientsDiv.innerHTML = '';
-      for (let i = 0; i <= n; i++) {
-        const inputField = document.createElement('div');
-        inputField.className = 'input-field';
-        inputField.innerHTML = `<label for="coefficient${i}">${n - i}次の係数:</label><input type="text" id="coefficient${i}" />`;
-        coefficientsDiv.appendChild(inputField);
-      }
+function createFields() {
+  const maxDegree = document.getElementById('maxDegree').value;
+  n = parseInt(maxDegree);
+  if (isNaN(n) || n <= 0) {
+    alert('1以上の正の整数を入力してください。');
+    return;
+  }
+  
+  const coefficientsDiv = document.getElementById('coefficients');
+  coefficientsDiv.innerHTML = '';
+  
+  for (let i = 0; i <= n; i++) {
+    const inputField = document.createElement('div');
+    inputField.className = 'input-field';
+    const defaultVal = (i === 0) ? "1" : (i === n ? "-1" : "0");
+    inputField.innerHTML = `<label for="coefficient${i}">$x^{${n - i}}$ の係数 ($a_{${n - i}}$):</label><input type="text" id="coefficient${i}" value="${defaultVal}" />`;
+    coefficientsDiv.appendChild(inputField);
+  }
+  document.getElementById('calc-button-container').style.display = 'block';
+  document.getElementById('results').innerHTML = '';
+}
+
+function calculate() {
+  sa = [];
+  sr = Array(n + 1);
+  si = Array(n + 1);
+  
+  for (let i = 0; i <= n; i++) {
+    const coefficient = document.getElementById(`coefficient${i}`).value.trim();
+    try {
+      sa[i] = new Decimal(coefficient || "0");
+    } catch(e) {
+      alert(`係数 ${n - i} 次の入力が正しい数値ではありません。`);
+      return;
     }
+  }
 
-    function startCalculation() {
-      const resultsDiv = document.getElementById('results');
-      
-      if (n <= 0) {
-        alert('まず「最高次数を設定」ボタンを押し、係数を入力してください。');
-        return;
-      }
+  if (sa[0].isZero()) {
+    alert('最高次の係数（a_n）に 0 は指定できません。');
+    return;
+  }
 
-      resultsDiv.innerHTML = '計算中...';
+  // 計算用に正規化された係数配列をコピー
+  sa_norm = [...sa];
 
-      for (let i = 0; i <= n; i++) {
-        const element = document.getElementById(`coefficient${i}`);
-        const coefficient = element ? element.value : "0";
-        sa[i] = new Decimal(coefficient || "0");
-      }
-      
-      if (!sa[0] || sa[0].isZero()) {
-        alert('最高次数の係数を正しく設定してください（0は不可）。');
-        resultsDiv.innerHTML = '';
-        return;
-      }
+  // 計算の実行
+  subroutine();
 
-      // 計算処理を実行
-      subroutineSync();
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML = '';
 
-      resultsDiv.innerHTML = '';
-
-      const box = document.createElement('div');
-      box.className = 'result-box';
-      box.innerHTML = '<h3>計算結果（200桁・検算付き）</h3>';
-
-      for (let i = 1; i <= n; i++) {
-        if (sr[i].minus(sr[i].round()).abs().lt("1e-12")) sr[i] = sr[i].round();
-        if (si[i].minus(si[i].round()).abs().lt("1e-12")) si[i] = si[i].round();
-
-        // 検算処理
-        let checkR = new Decimal(0);
-        let checkI = new Decimal(0);
-        
-        for (let j = 0; j <= n; j++) {
-          let pR = new Decimal(1);
-          let pI = new Decimal(0);
-          let power = n - j;
-          
-          for (let p = 0; p < power; p++) {
-            let nextR = pR.mul(sr[i]).sub(pI.mul(si[i]));
-            let nextI = pR.mul(si[i]).add(pI.mul(sr[i]));
-            pR = nextR;
-            pI = nextI;
-          }
-          checkR = checkR.add(sa[j].mul(pR));
-          checkI = checkI.add(sa[j].mul(pI));
-        }
-
-        let residual = checkR.pow(2).add(checkI.pow(2)).pow(0.5);
-        let checkStatus = residual.lt("1e-10") 
-          ? `<span class="check-ok">OK (残差: ${residual.toString()})</span>` 
-          : `<span class="check-error">要確認 (残差: ${residual.toString()})</span>`;
-
-        const item = document.createElement('div');
-        item.className = 'result-item';
-        item.innerHTML = `
-          <strong>【解 ${i}】</strong>
-          <div class="value-text">実部: ${sr[i].toString()}</div>
-          <div class="value-text">虚部: ${si[i].toString()}</div>
-          <div style="font-size: 0.85em; margin-top: 4px;">多項式検算: ${checkStatus}</div>
-        `;
-        box.appendChild(item);
-      }
-      resultsDiv.appendChild(box);
-    }
-
-    function subroutineSync() {
-      let sx = Array(n+1).fill(new Decimal(0));
-      let sy = Array(n+1).fill(new Decimal(0));
-      let se = new Decimal("1e-15"); 
-      let m = 100;                    
-      
-      let firstCoeff = sa[0]; // 【バグ修正】インデックスを正しく指定
-      let norm_sa = [];
-      for (let i = 0; i <= n; i++) {
-        norm_sa[i] = sa[i].div(firstCoeff);
-      }
-
-      let sw = new Decimal(0);
-      for (let i = 1; i <= n; i++) {
-        let sq = new Decimal(n).mul(norm_sa[i].abs());
-        if (sw.lt(sq)) sw = sq;
-      }
-      if (sw.isZero()) sw = new Decimal(1); 
-
-      let pi = new Decimal("3.141592653589793");
-      let sb = pi.mul(2).div(n);
-      let sc = pi.div(2 * n);
+  if (!bSyuusoku) {
+    alert('指定された反復回数内で収束しませんでした。');
+  } else {
+    // 収束後、各解の検算を実行
+    for (let i = 1; i <= n; i++) {
+      // 元の多項式 P(z) に解 z = sr[i] + i*si[i] を代入して残差を求める (Horner法)
+      let check_r = new Decimal(sa[0]);
+      let check_i = new Decimal(0);
 
       for (let j = 1; j <= n; j++) {
-        let angle = parseFloat(sb.mul(j - 1).add(sc).toString());
-        sr[j] = sw.mul(Math.cos(angle));
-        si[j] = sw.mul(Math.sin(angle));
+        // (check_r + i*check_i) * (sr[i] + i*si[i]) + sa[j]
+        let next_r = check_r.mul(sr[i]).sub(check_i.mul(si[i])).add(sa[j]);
+        let next_i = check_r.mul(si[i]).add(check_i.mul(sr[i]));
+        check_r = next_r;
+        check_i = next_i;
       }
 
-      for (let k = 1; k <= m; k++) {
-        let bContinue = false;
+      // 残差の絶対値（誤差の大きさ）を計算: sqrt(check_r^2 + check_i^2)
+      let error_abs = check_r.pow(2).add(check_i.pow(2)).sqrt();
 
-        for (let i = 1; i <= n; i++) {
-          let s1 = new Decimal(1);
-          let s2 = new Decimal(0);
-          let s3 = new Decimal(1);
-          let s4 = new Decimal(0);
-
-          let jb = sr[i];
-          let jc = si[i];
-
-          for (let j = 1; j <= n; j++) {
-            let s5 = s1.mul(jb).sub(s2.mul(jc));
-            s2 = s1.mul(jc).add(s2.mul(jb));
-            s1 = s5.add(norm_sa[j]);
-
-            if (j !== i) {
-              let diffR = jb.sub(sr[j]);
-              let diffI = jc.sub(si[j]);
-              s5 = s3.mul(diffR).sub(s4.mul(diffI));
-              s4 = s3.mul(diffI).add(s4.mul(diffR));
-              s3 = s5;
-            }
-          }
-
-          sw = s3.pow(2).add(s4.pow(2));
-          if(sw.isZero()) sw = new Decimal("1e-50");
-          
-          sx[i] = s1.mul(s3).add(s2.mul(s4)).div(sw);
-          sy[i] = s2.mul(s3).sub(s1.mul(s4)).div(sw);
-          sr[i] = sr[i].sub(sx[i]);
-          si[i] = si[i].sub(sy[i]);
-
-          if (sx[i].abs().gt(se) || sy[i].abs().gt(se)) {
-            bContinue = true;
-          }
-        }
-
-        if (!bContinue) {
-          bSyuusoku = true;
-          return;
-        }
-      }
-      bSyuusoku = true; 
+      // UIへの結果出力
+      const card = document.createElement('div');
+      card.className = 'result-card';
+      card.innerHTML = `
+        <div class="result-title">解 ${i}</div>
+        <div><strong>実部 (Real Part):</strong><div class="result-value">${sr[i].toFixed(200)}</div></div>
+        <div style="margin-top:8px;"><strong>虚部 (Imaginary Part):</strong><div class="result-value">${si[i].toFixed(200)}</div></div>
+        
+        <div class="validation-box">
+          <div class="validation-title">【200桁高精度検算（元の式に代入した結果）】</div>
+          <div><strong>P(解) の実部残差:</strong> ${check_r.toExponential(10)}</div>
+          <div><strong>P(解) の虚部残差:</strong> ${check_i.toExponential(10)}</div>
+          <div><strong>絶対誤差（正確さの証明）:</strong> <span style="color: #d84315; font-weight:bold;">${error_abs.toExponential(5)}</span></div>
+        </div>
+      `;
+      resultsDiv.appendChild(card);
     }
+  }
+}
+
+function subroutine() {
+  let sx = Array.from({length: n + 1}, () => new Decimal(0));
+  let sy = Array.from({length: n + 1}, () => new Decimal(0));
+  
+  let se = new Decimal("1e-195"); 
+  let m = 800; // パフォーマンスと精度のバランスをとった最大反復数
+  
+  let sp = Decimal.acos(-1); 
+  let sw = new Decimal(0);
+
+  // 最高次係数で全体を割る（a_0 を 1 に正規化）
+  const a0 = sa_norm[0];
+  for (let i = 0; i <= n; i++) {
+    sa_norm[i] = sa_norm[i].div(a0);
+  }
+
+  // 初期値の円軌道半径 sw の計算
+  for (let i = 1; i <= n; i++) {
+    let q = new Decimal(1).div(new Decimal(i));
+    let sq = new Decimal(n).mul(sa_norm[i].abs().pow(q));
+    if (sw.lt(sq)) sw = sq;
+  }
+  if (sw.isZero()) sw = new Decimal(1);
+
+  let sb = sp.mul(2).div(new Decimal(n));
+  let sc = sp.div(new Decimal(2 * n));
+
+  for (let j = 1; j <= n; j++) {
+    let st = sb.mul(new Decimal(j - 1)).add(sc);
+    sr[j] = sw.mul(Decimal.cos(st));
+    si[j] = sw.mul(Decimal.sin(st));
+  }
+
+  // DK法のメインループ
+  for (let k = 1; k <= m; k++) {
+    let bContinue = false;
+
+    for (let i = 1; i <= n; i++) {
+      let s1 = new Decimal(1);
+      let s2 = new Decimal(0);
+      let s3 = new Decimal(1);
+      let s4 = new Decimal(0);
+
+      let bi = sr[i];
+      let ci = si[i];
+
+      for (let j = 1; j <= n; j++) {
+        let s5 = s1.mul(bi).sub(s2.mul(ci));
+        s2 = s1.mul(ci).add(s2.mul(bi));
+        s1 = s5.add(sa_norm[j]);
+
+        if (j !== i) {
+          let dx = bi.sub(sr[j]);
+          let dy = ci.sub(si[j]);
+          s5 = s3.mul(dx).sub(s4.mul(dy));
+          s4 = s3.mul(dy).add(s4.mul(dx));
+          s3 = s5;
+        }
+      }
+
+      let den;
+      if (s3.abs().gte(s4.abs())) {
+        let ratio = s4.div(s3);
+        den = s3.add(s4.mul(ratio));
+        sx[i] = s1.add(s2.mul(ratio)).div(den);
+        sy[i] = s2.sub(s1.mul(ratio)).div(den);
+      } else {
+        let ratio = s3.div(s4);
+        den = s3.mul(ratio).add(s4);
+        sx[i] = s1.mul(ratio).add(s2).div(den);
+        sy[i] = s2.mul(ratio).sub(s1).div(den);
+      }
+
+      sr[i] = sr[i].sub(sx[i]);
+      si[i] = si[i].sub(sy[i]);
+
+      if (sx[i].abs().gt(se) || sy[i].abs().gt(se)) {
+        bContinue = true;
+      }
+    }
+
+    if (!bContinue) {
+      bSyuusoku = true;
+      alert(`${k}回目の反復で200桁の精度に収束しました！\n直ちに自動検算を行います。`);
+      return;
+    }
+  }
+
+  bSyuusoku = false;
+}
+</script>
+</body>
+</html>
