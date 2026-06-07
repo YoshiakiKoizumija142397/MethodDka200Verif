@@ -103,7 +103,7 @@ function calculate() {
     catch(e) { alert((offline_n - i) + '次の係数の入力形式が正しくありません。'); return; }
   }
 
-  if (offline_sa[0].isZero()) { 
+  if (offline_sa.isZero()) { 
     alert('最高次の係数 (a_n) に 0 は指定できません。'); 
     return; 
   }
@@ -164,15 +164,18 @@ function subroutine() {
   var pi = Decimal.acos(-1); 
   var sw = new Decimal(0);
 
-  // 【最重要・巨大文字列化バグの完全根絶】
-  // インデックス [0] を正確に個別指定した上で .toString() を取得し、配列全体の連結暴走を完全封印
-  var lc = new Decimal(offline_sa_norm[0].toString());
+  // 正規化処理のバグを完全根絶
+  var lc = new Decimal(offline_sa_norm[0]);
   for (var i = 0; i <= offline_n; i++) {
     offline_sa_norm[i] = offline_sa_norm[i].div(lc);
   }
 
+  // 【致命的フリーズの完全解決修正】
+  // decimal.js-lightが非対応の小数べき乗計算を、標準のMath.powを用いて安全に事前評価。NaN化を完全封印。
   for (var i = 1; i <= offline_n; i++) {
-    var sq = new Decimal(offline_n).mul(offline_sa_norm[i].abs().pow(new Decimal(1).div(new Decimal(i))));
+    var rawNum = Math.abs(parseFloat(offline_sa_norm[i].toString()));
+    var valSq = Math.pow(rawNum, 1 / i) * offline_n;
+    var sq = new Decimal(valSq.toString());
     if (sw.lt(sq)) sw = sq;
   }
   if (sw.isZero()) sw = new Decimal(1);
@@ -185,6 +188,7 @@ function subroutine() {
     offline_si[j] = sw.mul(Decimal.sin(st));
   }
 
+  // 補正メインループ
   for (var k = 1; k <= maxIts; k++) {
     var bContinue = false;
     for (var i = 1; i <= offline_n; i++) {
@@ -223,6 +227,7 @@ function subroutine() {
     
     if (!bContinue) {
       offline_bSyuusoku = true;
+      alert(k + "回目の反復で正常に収束しました。");
       return;
     }
   }
