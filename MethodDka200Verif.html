@@ -2,8 +2,8 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>MethodDka - Ultra High Precision & Verification (200桁・自動検算版)</title>
-  <!-- 高精度計算ライブラリ decimal.js の正しいCDN URL -->
+  <title>MethodDka - Ultra High Precision (200桁・ループカウンター版)</title>
+  <!-- 高精度計算ライブラリ decimal.js -->
   <script src="https://cloudflare.com"></script>
   <style>
     body { font-family: Arial, sans-serif; }
@@ -28,6 +28,7 @@
     .button:disabled { background-color: #ced4da; cursor: not-allowed; }
     .button:hover:not(:disabled) { background-color: #004085; }
     
+    /* 進行状況を表示するバー */
     .status-bar {
       margin-top: 15px;
       padding: 10px;
@@ -62,17 +63,11 @@
       border-radius: 4px;
       margin: 2px 0;
     }
-    .verify-text {
-      font-size: 0.85em;
-      color: #495057;
-      margin-top: 4px;
-    }
-    .status-perfect { color: #28a745; font-weight: bold; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>MethodDka (200桁・自動検算版)</h1>
+    <h1>MethodDka (200桁・ループカウンター版)</h1>
     <div class="input-field">
       <label for="maxDegree">最高次数:</label>
       <input type="number" id="maxDegree" value="2" />
@@ -113,7 +108,7 @@ function createFields() {
   }
 }
 
-// 画面更新とCPUの排熱を待つための非同期ウェイト（少し長めの4ミリ秒に調整）
+// 画面更新の隙間を作るための短い非同期ウェイト（1ミリ秒）
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function startCalculation() {
@@ -125,7 +120,7 @@ async function startCalculation() {
   resultsDiv.innerHTML = '';
   statusBar.style.display = 'block';
   statusBar.innerText = '初期化中...';
-  await sleep(10); 
+  await sleep(1); 
 
   Decimal.set({ precision: 200 });
 
@@ -133,6 +128,7 @@ async function startCalculation() {
     const coefficient = document.getElementById(`coefficient${i}`).value;
     sa[i] = new Decimal(coefficient || "0");
   }
+  
   if (n === 0 || sa[0].isZero()) {
     alert('最高次数の係数を正しく設定してください（0は不可）。');
     calcBtn.disabled = false;
@@ -146,15 +142,14 @@ async function startCalculation() {
   calcBtn.disabled = false;
 
   if (!bSyuusoku) {
-    alert('200回の反復では収束しませんでした。係数または次数を確認してください。');
+    alert('100回の反復では収束しませんでした。係数または次数を確認してください。');
   } else {
     const box = document.createElement('div');
     box.className = 'result-box';
-    box.innerHTML = '<h3>計算結果および自動検算レポート</h3>';
+    box.innerHTML = '<h3>計算結果</h3>';
 
     for (let i = 1; i <= n; i++) {
-      const check = verifyRoot(sr[i], si[i]);
-
+      // ほぼ整数なら丸める処理
       if (sr[i].minus(sr[i].round()).abs().lt("1e-15")) sr[i] = sr[i].round();
       if (si[i].minus(si[i].round()).abs().lt("1e-15")) si[i] = si[i].round();
 
@@ -164,12 +159,6 @@ async function startCalculation() {
         <strong>【解 ${i}】</strong>
         <div class="value-text">実部: ${sr[i].toString()}</div>
         <div class="value-text">虚部: ${si[i].toString()}</div>
-        <div class="verify-text">
-          <strong>検算（代入結果の残り誤差）:</strong><br>
-          実部残差: <span class="value-text">${check.resR.toString()}</span><br>
-          虚部残差: <span class="value-text">${check.resI.toString()}</span><br>
-          <span class="status-perfect">→ 信頼度検証完了（200桁基準）</span>
-        </div>
       `;
       box.appendChild(item);
     }
@@ -182,17 +171,15 @@ async function subroutineAsync() {
   let sx = Array(n+1).fill(new Decimal(0));
   let sy = Array(n+1).fill(new Decimal(0));
   
-  let se = new Decimal("1e-150"); 
-  
-  // 【修正】最大ループ回数を200回に完全制限
-  let m = 200; 
+  let se = new Decimal("1e-200"); // 最初のコードと同じ元のしきい値
+  let m = 100;                    // ループ上限100回
   
   let sp = Decimal.acos(-1);
   let sw = new Decimal(0);
 
   let norm_sa = [];
   for (let i = 0; i <= n; i++) {
-    norm_sa[i] = sa[i].div(sa[0]);
+    norm_sa[i] = sa[i].div(sa[0]); // 元の配列インデックス sa[0] に固定
   }
 
   for (let i = 2; i <= n; i++) {
@@ -206,21 +193,17 @@ async function subroutineAsync() {
 
   for (let j = 1; j <= n; j++) {
     let st = sb.mul(j - 1).add(sc);
-    let noiseR = new Decimal(1 + (Math.random() - 0.5) * 0.01);
-    let noiseA = new Decimal((Math.random() - 0.5) * 0.01);
-    let finalSt = st.add(noiseA);
-
-    sr[j] = sw.mul(noiseR).mul(Decimal.cos(finalSt));
-    si[j] = sw.mul(noiseR).mul(Decimal.sin(finalSt));
+    sr[j] = sw.mul(Decimal.cos(st));
+    si[j] = sw.mul(Decimal.sin(st));
   }
 
   // DKA反復ループ
   for (let k = 1; k <= m; k++) {
-    // 【修正】1回ループするごとに正確にカウントを表示し、CPUを休ませる（await sleep）
+    // 【機能追加】現在のループ回数を画面にリアルタイムで上書き表示
     statusBar.innerText = `計算中... 現在のループ回数: ${k} / ${m} 回目`;
     
-    // 1回の超高精度計算ごとに4ミリ秒の休憩を挟むことで、第8世代CPUのファンが暴走するのを防ぎます
-    await sleep(4); 
+    // 画面の数字をフリーズさせずにパラパラ動かすための休憩
+    await sleep(1); 
 
     let bContinue = false;
 
@@ -258,26 +241,12 @@ async function subroutineAsync() {
 
     if (!bContinue) {
       bSyuusoku = true;
-      alert(`${k} 回目のループで無事に収束しました！`);
+      alert(`${k} 回目のループで200桁の精度に収束しました！`);
       return;
     }
   }
 
   bSyuusoku = false;
-}
-
-function verifyRoot(rootR, rootI) {
-  let resR = new Decimal(sa[0]);
-  let resI = new Decimal(0);
-
-  for (let i = 1; i <= n; i++) {
-    let nextR = resR.mul(rootR).sub(resI.mul(rootI));
-    let nextI = resR.mul(rootI).add(resI.mul(rootR));
-    resR = nextR.add(sa[i]);
-    resI = nextI;
-  }
-
-  return { resR: resR, resI: resI };
 }
 </script>
 </body>
